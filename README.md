@@ -25,6 +25,7 @@
 - `research/02_market_research.md` - исследование рынка.
 - `requirements/08_mvp.md` - состав MVP.
 - `architecture/11_architecture.md` - архитектурная рамка.
+- `architecture/15_security_and_resilience.md` - базовые правила безопасности и устойчивости MVP.
 - `agents/15_agent_workflow.md` - workflow агентов.
 - `process/glossary.md` - словарь терминов.
 
