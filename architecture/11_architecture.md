@@ -2,144 +2,366 @@
 
 ## Status
 
-Draft. Cross-platform MVP direction is selected for implementation planning.
+Draft. Iteration 01 architecture proposal for the React Native/Expo + TypeScript MVP.
 
-## Product Architecture
+## Summary
 
-Центральная сущность продукта - `Trip`.
+The MVP should be a local-first mobile app where a `Trip` is the user's single workspace for days, places, map context, flights, housing, notes, and optional checklists/reminders. The first implementation should not depend on a backend, sync, LLM, booking, automatic import, live flight tracking, route optimization, own routing, collaboration, or full offline maps.
 
-Связанные сущности:
+The current `app/mobile/App.tsx` is a static Expo screen. The implementation architecture below turns it into a small, testable Expo application with explicit module boundaries, typed domain models, local persistence, provider adapters for map/search/navigation, and feature slices that can be built independently.
 
-- `Place`;
-- `DayPlan`;
-- `RoutePoint`;
-- `Flight`;
-- `HotelBooking`;
-- `Note`;
-- `Checklist`;
-- `Reminder`;
-- `Attachment` later;
-- `Expense` later.
+## How It Works End To End
 
-## Proposed MVP Direction
+1. The user opens the app and sees either the last opened trip or an empty trip list.
+2. The user creates a trip with a title and optional start/end dates.
+3. The trip opens into the main mobile structure: `Today`, `Days`, and `Map`.
+4. The app derives the trip mode locally:
+   - `Planning` when dates are unknown or the current date is outside the trip range;
+   - `InTrip` when today's date is inside the trip range;
+   - manual day selection remains available when automatic `Today` cannot be resolved.
+5. The user adds places through a search provider when online, or saves a manual place with title/address/note when search fails or is not useful.
+6. Saved places are stored locally. Places with coordinates appear on trip/day maps; places without coordinates remain visible in lists and show a "needs location" state.
+7. The user builds each day by adding ordered plan items. A plan item is either a manual event with its own saved display fields or an object-backed reference to a place, flight, housing object, note, or checklist item when checklists are included.
+8. The `Today` view selects the current or nearest relevant day and highlights the next future item only when item times allow a defensible choice. Without times, it uses manual order and does not pretend to know the next step.
+9. The user can open a place or housing address in external maps. The app passes coordinates or a textual address to the device map URL. Navigation remains outside the app.
+10. Flights and housing are entered manually as stable text records. No live status, gate automation, booking import, or disruption support exists in MVP.
+11. Notes can belong to a trip, day, or object. Checklists are simple local lists only if they pass the first-release scope gate.
+12. Saved trip text/details remain readable without network because they are stored on device. Place search, geocoding, fresh map tiles, and external navigation may require network or another installed app and must show clear degraded states.
 
-Recommended MVP shape: cross-platform mobile-first local-first application with an optional future sync/backend boundary.
+## Architecture Proposal
 
-The MVP should optimize for:
+Use a layered client architecture inside `app/mobile/src`:
 
-- fast access on a phone during a trip;
-- reliable manual entry with incomplete data;
-- saved trip details that remain readable with weak or absent network;
-- map display and external navigation handoff without own routing;
-- no dependency on LLM, automatic import, live flight data, collaboration, or full offline maps.
+```text
+src/
+  app/
+    AppRoot.tsx
+    navigation/
+    providers/
+  features/
+    trips/
+    today/
+    days/
+    places/
+    maps/
+    flights/
+    housing/
+    notes/
+    checklists/
+    reminders/
+  domain/
+    models/
+    rules/
+  data/
+    repositories/
+    storage/
+    migrations/
+    seed/
+  services/
+    map/
+    placeSearch/
+    externalNavigation/
+    notifications/
+    network/
+    clock/
+  shared/
+    ui/
+    forms/
+    errors/
+    i18n/
+    testing/
+```
 
-## Mobile Stack Options
+The important rule is dependency direction:
 
-| Option | Strengths | Weaknesses | MVP fit |
-| --- | --- | --- | --- |
-| Swift/iOS | Best native iPhone UX, local storage, Apple MapKit, local notifications, Keychain, background behavior, and App Store path. Smallest runtime stack for iOS-only personal MVP. | iOS-only; later Android/web requires another client or rewrite. Requires Apple development workflow. | Rejected as default because Android support should remain reachable without rewriting the whole product. |
-| React Native/Expo | Faster cross-platform iteration, strong ecosystem, Expo local notifications, broad UI/community support, easier later Android path than Swift. | Native map/search/storage edges still need careful testing; offline persistence and migrations require chosen libraries; advanced native behavior may need custom dev client or ejecting. | Selected default: build and test first on computer/iPhone-focused layouts, while keeping Android reachable from the same codebase. |
-| Flutter | Good cross-platform UI consistency, local SQLite support, mature mobile app tooling. | Dart/Flutter stack choice is heavier if the team is not already using it; native maps/search plugins add dependency risk; web/PWA output is not the same as a web product. | Viable, but not clearly better than React Native/Expo unless team already prefers Flutter. |
-| PWA/mobile-first web | Fast prototype and easiest desktop planning later; deployable without app stores; good for CRUD and responsive UI. | Mobile offline, notifications, background behavior, and native map handoff are more constrained and vary by platform/browser; app-like travel reliability is weaker. | Good prototype path, weaker first product if the main scenario is phone use during travel. |
+```text
+features -> domain -> data interfaces
+features -> service interfaces
+data adapters -> storage implementation
+service adapters -> provider SDKs / Expo APIs
+```
 
-Recommendation: use React Native/Expo with TypeScript as the default MVP stack. Validate the first layouts against iPhone 14 Pro Max dimensions, but keep Android support reachable from the same codebase.
+Domain models must not import React Native, Expo, map SDKs, notification SDKs, or storage libraries. Provider-specific code stays behind adapters.
 
-## Map Provider Options
+## Modules
 
-MVP needs three map capabilities:
+### App Shell
 
-- search or geocoding for adding places;
-- display saved coordinates on a trip/day map;
-- external navigation handoff to installed map apps.
+Ownership: application boot, navigation, dependency injection, error boundaries, app-level loading states.
 
-The MVP does not need own routing, route optimization, live traffic, or offline maps.
+Responsibilities:
 
-| Option | Strengths | Weaknesses | MVP fit |
-| --- | --- | --- | --- |
-| Apple MapKit | Strong iOS-native fit, good user experience on iPhone, MapKit/MapKit JS ecosystem, natural Apple Maps handoff. Avoids adding a third-party map SDK for an iOS MVP. | iOS-centric; less useful for Android; coverage/search quality varies by region; owner must accept Apple ecosystem dependency. | Not the default for cross-platform MVP. Useful as an external handoff target on iOS. |
-| Google Maps Platform | Broad coverage and familiar UX; strong Places and Maps products; easy external handoff to Google Maps URLs/apps. | Usage-priced APIs and billing setup; provider lock-in risk; Places/search can become a material cost if usage grows. | Good candidate when search quality matters more than minimizing vendor/cost exposure. |
-| Mapbox | Strong custom maps and SDKs; cross-platform options; flexible visual styling. | Usage-priced; search/geocoding and map display are separate product decisions; unnecessary complexity if MVP only needs simple pins and handoff. | Viable for custom map-heavy future, not the leanest MVP default. |
-| Yandex Maps | Strong regional relevance for Russia/CIS users; useful external handoff where Yandex Maps is common. | Commercial/API constraints and regional availability must be checked for intended market; less universal if product later targets global travel. | Consider as external handoff option and maybe search provider for Russia/CIS-focused use. |
-| OpenStreetMap/Leaflet | Open data ecosystem; low vendor lock-in for web display; useful for a later web prototype. | Public OSM tile service is not a production app tile backend and is not for bulk/offline use; mobile SDK/search/geocoding require additional providers or self-hosting. | Good data/source option, but not a complete low-effort MVP map stack by itself. |
+- initialize local database and migrations;
+- create repository and service instances;
+- restore last selected trip;
+- define navigation between trip list, trip shell, modals, and detail screens;
+- provide Russian UI strings through a simple i18n boundary.
 
-Recommendation: for React Native/Expo MVP, use a map implementation that can run on both iOS and Android, keep provider-specific calls behind `MapViewProvider` and `PlaceSearchProvider` interfaces, and start with external navigation handoff. Final map/search provider choice remains a follow-up spike because pricing, coverage, and SDK constraints matter.
+### Trip Workspace
 
-## Storage And Sync
+Ownership: `Trip` lifecycle and main `Today / Days / Map` shell.
 
-Recommended MVP direction: local-first.
+Responsibilities:
 
-Local-first means the app's source of truth for the first implementation is an on-device database, not a remote API. The app should read and write trip data locally first, and future sync should be added as an explicit capability after the manual MVP is validated.
+- create, edit, archive/delete trips;
+- select active trip;
+- expose fast access to housing, flights, notes, and checklists;
+- show save/offline-readable status based on local persistence, not network.
 
-Suggested local model:
+### Domain Models And Rules
 
-- `Trip` owns related trip entities through stable local IDs.
-- `Place` stores user-entered name/address/comment plus optional coordinates and provider metadata.
-- `DayPlan` and `RoutePoint` store manual ordering, optional times, and references to places/events.
-- `Flight`, `HotelBooking`, `Note`, and `Checklist` are editable manually and tolerate incomplete fields.
-- `Reminder` stores intended reminder time and target entity even if system notification permission is not available.
+Ownership: typed app data and deterministic rules.
 
-Suggested local storage:
+Core entities:
 
-- React Native/Expo: SQLite-backed storage with explicit migrations or another Expo-compatible local database selected during implementation spike.
-- Sensitive small secrets, if any, should use platform secure storage. Avoid passport data in early versions.
+- `Trip`: `id`, `title`, optional `startDate`, optional `endDate`, `createdAt`, `updatedAt`.
+- `TripDay`: `id`, `tripId`, `date`, `title`, `sortOrder`.
+- `Place`: `id`, `tripId`, `title`, optional `address`, optional `comment`, optional `coordinates`, optional `providerRef`, `createdAt`, `updatedAt`.
+- `DayItem`: `id`, `tripId`, `dayId`, `kind`, optional `targetId`, `displayTitle`, optional `displaySubtitle`, optional `time`, optional `note`, `sortOrder`, optional `isTargetMissing`.
+- `Flight`: `id`, `tripId`, optional `flightNumber`, optional `departureDateTime`, optional `arrivalDateTime`, optional `departureAirport`, optional `arrivalAirport`, optional `terminal`, optional `gate`, optional `bookingReference`, optional `notes`.
+- `Housing`: `id`, `tripId`, optional `title`, optional `address`, optional `coordinates`, optional `checkIn`, optional `checkOut`, optional `bookingReference`, optional `contacts`, optional `notes`.
+- `Note`: `id`, `tripId`, `scope`, optional `scopeId`, `title`, `body`, `createdAt`, `updatedAt`.
+- `Checklist`: `id`, `tripId`, optional `scope`, optional `scopeId`, `title`.
+- `ChecklistItem`: `id`, `checklistId`, `title`, `isDone`, `sortOrder`.
+- `Reminder`: `id`, `tripId`, `targetKind`, `targetId`, `scheduledAt`, `status`.
 
-## Cached Saved Details
+Rules:
 
-Cached saved details should be treated as a core local-read capability, not as full offline mode.
+- only `Trip.title` is required for trip creation;
+- manual places can be saved without coordinates;
+- flight and housing forms tolerate incomplete data;
+- `Today` is a derived view, not a stored entity;
+- next item is derived only from dated/timed day items;
+- local IDs must be stable and sync-ready, even though sync is outside MVP.
 
-Recommended first implementation:
+`DayItem.kind` values:
 
-- all text data for the current trip is readable offline after it has been saved locally;
-- trips, days, places, flights, housing, notes, and checklists open without network;
-- saved coordinates remain available and can be shown if the map SDK has already cached tiles, but the product must not promise offline map tiles or offline routing;
-- place search, geocoding, map tile loading, and external navigation are clearly online-dependent when the network is unavailable;
-- failed online enrichment must not block manual place creation.
+- `manual`: standalone user-entered event. `targetId` must be empty. `displayTitle` is required.
+- `place`: references `Place.id`.
+- `flight`: references `Flight.id`.
+- `housing`: references `Housing.id`.
+- `note`: references `Note.id`.
+- `checklistItem`: references `ChecklistItem.id` only when checklists are included in the first release.
 
-This satisfies the saved-detail value without introducing tile caching, route engines, or a sync conflict system.
+Target semantics:
 
-## Backend Direction
+- Object-backed items must store `targetId` and denormalized display fields copied from the target at link time.
+- Denormalized fields are the day plan fallback, not the source of truth while the target exists.
+- When the target exists, the UI may refresh display from the target and update the snapshot during normal edits.
+- When the target is missing, the day plan keeps the readable snapshot, marks the item as unlinked/missing, and disables target-specific actions.
+- Manual events are first-class day items and do not need a separate target table.
 
-Do not build a backend for the MVP critical path unless owner scope changes require account login, multi-device sync, shared trips, or server-side LLM.
+Deletion and unlink behavior:
 
-Recommended staging:
+- Deleting a `DayItem` never deletes its target object.
+- Deleting or unlinking a target object does not silently delete a day item; the day item remains as a readable snapshot with `targetId` cleared or marked missing according to repository implementation.
+- Re-linking a stale item to a new target refreshes `kind`, `targetId`, and denormalized display fields.
+- Repository tests must cover create, link, unlink, reorder, target deletion, stale display fallback, and reload behavior for each object-backed kind.
 
-1. MVP: local database, local export/backup consideration, no account.
-2. Post-MVP backup: manual export/import or iCloud/device backup path, depending on chosen platform.
-3. Post-MVP sync: small API with authenticated `Trip` sync, conflict strategy, and server-side encrypted-at-rest storage.
-4. Collaboration: separate product/architecture decision after personal trip use is validated.
+### Local Data Layer
 
-A personal server can be a later sync/LLM host, but should not be introduced before there is a concrete sync or AI need.
+Ownership: persistence, migrations, repository contracts, local query performance.
 
-## Notifications And Reminders
+Recommended approach: SQLite-backed local storage with explicit migrations. The concrete Expo-compatible package is a Proposed decision because the current scaffold has no storage dependency yet.
 
-Recommendation: reminders should not be a first implementation blocker. They can be included only after Must MVP flows work if local notifications are cheap in the chosen stack.
+Repository contracts:
 
-Implementation direction:
+- `TripRepository`
+- `PlaceRepository`
+- `DayPlanRepository`
+- `FlightRepository`
+- `HousingRepository`
+- `NoteRepository`
+- `ChecklistRepository`
+- `ReminderRepository`
 
-- Store reminder records in the local database as user data.
-- Schedule local system notifications on-device when permission is granted.
-- Show reminder state in-app even when notification permission is denied.
-- Avoid server push, queues, worker infrastructure, and external notification providers for MVP.
-- Do not implement flight live alerts, gate changes, delay tracking, or email/calendar import.
+Repositories return domain objects and accept typed command inputs. UI components should not issue raw SQL or know table names.
 
-## Future LLM Integration
+### Places And Maps
 
-LLM is outside MVP and must not be required to create, edit, read, or navigate a trip.
+Ownership: adding places, displaying saved coordinates, and external map handoff.
 
-Future fit:
+Interfaces:
 
-- add an `Assistant` module/service later that reads explicit user-selected trip context;
-- keep domain commands deterministic: create suggestion drafts, never silently mutate trips;
-- require user confirmation before generated places, day plans, notes, or checklists are saved;
-- run LLM calls through a server-side boundary if API keys, billing, prompt logging, or provider switching are needed;
-- redact or avoid sending booking numbers, private notes, contacts, and sensitive details unless explicitly approved by the user.
+```ts
+interface PlaceSearchProvider {
+  search(query: string, options?: { near?: Coordinates }): Promise<PlaceSearchResult[]>;
+  resolve(result: PlaceSearchResult): Promise<ResolvedPlace>;
+}
 
-## Architectural Constraints
+interface MapViewProvider {
+  // implemented as UI adapter props/components, not a domain dependency
+}
 
-- Mobile-first usage is the primary MVP scenario.
-- Trip data model must not depend on a map provider, LLM provider, booking provider, or flight provider.
-- Manual entry must work when place search/geocoding fails.
-- External maps provide navigation; MVP does not own routing.
-- Saved details can work offline; offline maps and routing are Later.
-- Backend, sync, collaboration, and LLM are future capabilities, not MVP prerequisites.
-- Important product/technical decisions remain Proposed until owner approval.
+interface ExternalNavigationService {
+  canOpen(target: NavigationTarget): Promise<boolean>;
+  open(target: NavigationTarget): Promise<OpenNavigationResult>;
+}
+```
+
+MVP behavior:
+
+- search/geocoding failures do not block manual place creation;
+- map display shows pins for saved coordinates only;
+- missing coordinates are visible in lists;
+- external navigation uses coordinates when present, otherwise address text;
+- when network or provider calls are unavailable, search shows manual-entry fallback, map falls back to saved lists/details, and navigation shows an unavailable/retry state if the device cannot open the target;
+- no in-app route calculation or optimization.
+
+### Today And Day Planning
+
+Ownership: day list, selected day, ordered plan items, quick edits, next item logic.
+
+Responsibilities:
+
+- generate trip days when trip dates exist;
+- allow manual day creation/selection when dates are unknown;
+- add/remove/reorder `DayItem` records;
+- support quick edits for time, note, title, and order;
+- compute `Today` and `NextItem` through pure domain functions.
+
+### Flights And Housing
+
+Ownership: manual stable records.
+
+Responsibilities:
+
+- create/edit/delete records;
+- expose quick-access cards;
+- allow linking records into day plans;
+- pass housing address/coordinates to external navigation;
+- never call live flight or booking APIs in MVP.
+
+### Notes And Checklists
+
+Ownership: lightweight contextual text and checklist data.
+
+Responsibilities:
+
+- trip/day/object scoped notes;
+- optional simple checklists;
+- local CRUD and quick access;
+- no templates, AI generation, or document attachments in MVP.
+
+### Reminders
+
+Ownership: optional local reminder intent and local notification scheduling.
+
+MVP boundary:
+
+- reminders are `Should`, not first-slice blockers;
+- store reminder records locally first;
+- schedule local notifications only through an Expo-compatible adapter after Must flows are stable;
+- no server push, live flight alerts, or background sync.
+
+## Data Flow
+
+Write flow:
+
+```text
+Screen/Form
+  -> feature action/hook
+  -> validation and domain command
+  -> repository interface
+  -> SQLite transaction
+  -> repository query refresh
+  -> screen state update
+```
+
+Read flow:
+
+```text
+Screen
+  -> feature query/hook
+  -> repository
+  -> local database
+  -> domain selectors
+  -> view model
+```
+
+Place search flow:
+
+```text
+Add place screen
+  -> PlaceSearchProvider.search(query)
+  -> user selects result
+  -> provider result normalized to Place
+  -> PlaceRepository.save()
+  -> map/day list refresh
+```
+
+Manual place fallback:
+
+```text
+Add place screen
+  -> user enters title/address/comment
+  -> PlaceRepository.save({ coordinates: null })
+  -> item appears in lists
+  -> map shows only other coordinate-backed places
+```
+
+External navigation flow:
+
+```text
+Place/Housing detail
+  -> build NavigationTarget from coordinates or address
+  -> ExternalNavigationService.open(target)
+  -> Linking opens installed/browser map
+```
+
+Offline saved-detail flow:
+
+```text
+App open
+  -> local database initializes
+  -> active trip is loaded locally
+  -> saved text details are readable
+  -> online-only actions show unavailable/retry states if network is absent
+```
+
+Offline boundary:
+
+- Included: previously saved trips, days, day items, places, flights, housing, notes, and included checklists are readable from local storage.
+- Best effort: map screens may render cached provider tiles if the provider/device happens to have them, but the app must not promise this and must keep list/detail access usable when the map cannot load.
+- Unavailable offline: new place search, geocoding, fresh map tiles, external navigation that requires network or another app response, live data, routing, route optimization, and sync.
+- UI copy must use "saved details" language, not "offline maps" or "offline navigation".
+
+## Testing Strategy
+
+Use a small test pyramid:
+
+- domain unit tests for date mode, next item, ordering, validation, and manual fallback behavior;
+- repository integration tests against a test SQLite database or storage adapter;
+- component tests for critical screens and empty/error states;
+- adapter contract tests with mocked map/search/navigation/notification providers;
+- E2E smoke tests after navigation and persistence exist.
+
+Every implementation slice in `architecture/13_implementation_slices.md` has its own acceptance tests.
+
+## Decisions Needed
+
+Owner decisions that remain `Proposed`:
+
+- concrete SQLite package and migration strategy for Expo;
+- concrete map display provider;
+- concrete place search/geocoding provider;
+- whether checklists are included in first release or implemented after Must flows;
+- whether local notifications are included in first release or deferred;
+- minimum offline copy wording in UI: "saved details available offline" rather than "offline mode".
+
+## Risks
+
+- Map/search provider selection can create cost, API key, and Expo compatibility risk. Keep adapters thin and spike before broad map work.
+- Manual entry loses value if forms require too many fields. Keep save actions tolerant of incomplete data.
+- Offline language can overpromise. UI and docs must avoid implying offline maps or routing.
+- Local-only MVP can lose data if the device is lost. Backup/export is post-MVP unless owner changes scope.
+- Optional reminders can distract from Must flows. Implement only after core trip workspace is usable.
+
+## Critic Feedback Addressed
+
+Iteration 01 critic feedback addressed in iteration 02:
+
+- added first-release scope gates for checklists, cached saved details, and reminders;
+- added bounded technical decision gates for storage, migrations, navigation, test stack, map provider, and search/geocoding provider;
+- defined `DayItem.kind`, `targetId`, display fallback, deletion/unlink behavior, and repository test expectations;
+- clarified offline support as saved-detail readability with degraded map/search/navigation behavior.
