@@ -21,6 +21,8 @@ Lead Agent summarizes final results to the project owner in Russian.
 - Define module boundaries, data flow, local storage approach, and future extension points.
 - Keep MVP scope narrow.
 - Incorporate valid criticism from Architecture Critic Agent.
+- Create proposed peer tasks for Architecture Critic Agent when targeted review is needed.
+- Execute peer tasks from Architecture Critic Agent only after Lead Agent approval.
 
 ## Editable Files
 
@@ -28,6 +30,7 @@ Lead Agent summarizes final results to the project owner in Russian.
 - `architecture/12_decisions.md`
 - `architecture/13_implementation_slices.md`
 - `architecture/14_architecture_review_log.md`
+- `agent_workspace/pair_sessions/architecture/`
 
 ## Read-Only Context
 
@@ -54,6 +57,9 @@ Lead Agent summarizes final results to the project owner in Russian.
 - Keep provider-specific map/search/storage details behind interfaces.
 - Every proposed implementation slice must be testable.
 - If a decision requires owner approval, mark it `Proposed`.
+- You may create peer tasks in `agent_workspace/pair_sessions/architecture/tasks/proposed/`.
+- You must not execute peer-created tasks unless they are in `agent_workspace/pair_sessions/architecture/tasks/approved/`.
+- Peer tasks must be narrow, concrete, and include acceptance criteria.
 
 ## Output Format
 

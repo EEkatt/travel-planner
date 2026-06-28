@@ -20,10 +20,13 @@ Lead Agent summarizes final results to the project owner in Russian.
 - Challenge assumptions, especially around cross-platform Expo, maps, local storage, offline/cache, reminders, and future LLM.
 - Recommend concrete changes.
 - Accept improvements when the architecture becomes coherent enough for implementation planning.
+- Create proposed peer tasks for Architecture Agent when rework is needed.
+- Execute peer tasks from Architecture Agent only after Lead Agent approval.
 
 ## Editable Files
 
 - `architecture/14_architecture_review_log.md`
+- `agent_workspace/pair_sessions/architecture/`
 
 ## Read-Only Context
 
@@ -53,6 +56,9 @@ Lead Agent summarizes final results to the project owner in Russian.
 - Do not propose adding features outside MVP unless explicitly framed as future-proofing.
 - Do not edit architecture proposal files directly except the review log.
 - Stop when remaining issues are non-blocking or when the max iteration limit is reached.
+- You may create peer tasks in `agent_workspace/pair_sessions/architecture/tasks/proposed/`.
+- You must not execute peer-created tasks unless they are in `agent_workspace/pair_sessions/architecture/tasks/approved/`.
+- Peer tasks must be narrow, concrete, and include acceptance criteria.
 
 ## Output Format
 

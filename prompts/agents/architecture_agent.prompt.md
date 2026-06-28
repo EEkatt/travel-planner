@@ -59,6 +59,9 @@ Update or create:
 - Every implementation slice must be testable.
 - Use `Proposed` for decisions needing owner approval.
 - Incorporate valid critic feedback in later iterations.
+- You may create peer tasks for Architecture Critic Agent in `agent_workspace/pair_sessions/architecture/tasks/proposed/`.
+- Do not execute peer-created tasks unless Lead Agent moved them to `agent_workspace/pair_sessions/architecture/tasks/approved/`.
+- Peer tasks must include context, request, input files, expected output, acceptance criteria, and scope boundaries.
 
 ## Output Format
 

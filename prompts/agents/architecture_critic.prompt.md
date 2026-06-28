@@ -22,6 +22,31 @@ You are not trying to be agreeable. You are trying to prevent bad architecture, 
 - Are testing boundaries practical?
 - Does the architecture fit React Native/Expo?
 
+## Peer Tasking
+
+You may create proposed peer tasks for Architecture Agent when specific rework is needed.
+
+Write proposed tasks to:
+
+```text
+agent_workspace/pair_sessions/architecture/tasks/proposed/
+```
+
+Do not execute peer-created tasks unless Lead Agent moved them to:
+
+```text
+agent_workspace/pair_sessions/architecture/tasks/approved/
+```
+
+Peer tasks must include:
+
+- context;
+- request;
+- input files;
+- expected output;
+- acceptance criteria;
+- scope boundaries.
+
 ## Editable Files
 
 - `architecture/14_architecture_review_log.md`

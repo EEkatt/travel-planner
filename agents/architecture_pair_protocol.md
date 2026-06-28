@@ -53,6 +53,113 @@ ITER-02-critic-review.md
 ...
 ```
 
+## Peer Tasking
+
+Architecture Agent and Architecture Critic Agent may create tasks for each other through files.
+
+They must not execute peer-created tasks until Lead Agent reviews and approves them.
+
+Task queues:
+
+```text
+agent_workspace/pair_sessions/architecture/tasks/proposed/
+agent_workspace/pair_sessions/architecture/tasks/approved/
+agent_workspace/pair_sessions/architecture/tasks/done/
+agent_workspace/pair_sessions/architecture/tasks/rejected/
+```
+
+Messages:
+
+```text
+agent_workspace/pair_sessions/architecture/messages/
+```
+
+Lead reviews:
+
+```text
+agent_workspace/pair_sessions/architecture/reviews/
+```
+
+## Peer Task File Naming
+
+Use:
+
+```text
+ITER-<NN>-TASK-from-<sender>-to-<receiver>-<short-topic>.md
+```
+
+Example:
+
+```text
+ITER-01-TASK-from-critic-to-architecture_agent-storage-boundary.md
+```
+
+## Peer Task Template
+
+```md
+# Peer Task: <Short Title>
+
+Iteration: <NN>
+From: architecture_agent | architecture_critic
+To: architecture_agent | architecture_critic
+Status: Proposed
+Created: YYYY-MM-DD
+
+## Context
+
+Why this task is needed.
+
+## Request
+
+Concrete request.
+
+## Input Files
+
+- `path/to/file.md`
+
+## Expected Output
+
+- expected file or section updates;
+- expected answer format.
+
+## Acceptance Criteria
+
+- specific criteria.
+
+## Scope Boundaries
+
+- what must not change;
+- what must remain outside MVP.
+```
+
+## Lead Review Of Peer Tasks
+
+Lead Agent reviews proposed peer tasks before execution.
+
+Lead can:
+
+- approve as-is by moving the task to `tasks/approved/`;
+- edit the task and then approve it;
+- reject it by moving the task to `tasks/rejected/`;
+- split it into smaller tasks.
+
+Lead review must check:
+
+- task is narrow enough;
+- task does not expand MVP;
+- editable files are explicit;
+- expected output is testable;
+- task does not conflict with current iteration.
+
+## Execution Rule
+
+Agents only execute:
+
+- Lead-created tasks;
+- peer-created tasks that are in `tasks/approved/`.
+
+Agents may create proposed tasks freely, but proposed tasks are not executable.
+
 ## Architecture Agent Writes
 
 - `architecture/11_architecture.md`
@@ -60,17 +167,20 @@ ITER-02-critic-review.md
 - `architecture/13_implementation_slices.md`
 - `architecture/14_architecture_review_log.md`
 - pair proposal files
+- proposed peer task files for Architecture Critic Agent
 
 ## Architecture Critic Writes
 
 - `architecture/14_architecture_review_log.md`
 - pair review files
+- proposed peer task files for Architecture Agent
 
 ## Lead Agent Responsibilities
 
 - launch agents;
 - pass Architect output to Critic;
 - pass Critic review back to Architect;
+- review, edit, approve, or reject peer-created tasks;
 - stop at max 10 iterations;
 - summarize final architecture to owner in Russian;
 - create follow-up tasks for implementation.
