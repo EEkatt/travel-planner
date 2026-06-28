@@ -18,6 +18,8 @@ Lead Agent communicates with the project owner in Russian by default.
 | `ux_analyst` | UX Analyst Agent | Specialist | User journeys, screens, UX risks | `prompts/agents/ux_analyst.prompt.md` | `agents/analytics/ux_analyst.md` |
 | `requirements_analyst` | Requirements Analyst Agent | Specialist | Requirements, acceptance criteria, backlog | `prompts/agents/requirements_analyst.prompt.md` | `agents/analytics/requirements_analyst.md` |
 | `technical_analyst` | Technical Analyst Agent | Specialist | Technical options and architecture recommendations | `prompts/agents/technical_analyst.prompt.md` | `agents/analytics/technical_analyst.md` |
+| `architecture_agent` | Architecture Agent | Specialist | Propose MVP application architecture and implementation slices | `prompts/agents/architecture_agent.prompt.md` | `agents/architecture/architecture_agent.md` |
+| `architecture_critic` | Architecture Critic Agent | Reviewer | Critique architecture proposals and force revisions | `prompts/agents/architecture_critic.prompt.md` | `agents/architecture/architecture_critic.md` |
 
 ## Authority Model
 
