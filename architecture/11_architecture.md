@@ -6,7 +6,7 @@ Draft. Iteration 01 architecture proposal for the React Native/Expo + TypeScript
 
 ## Summary
 
-The MVP should be a local-first mobile app where a `Trip` is the user's single workspace for days, places, map context, flights, housing, notes, and optional checklists/reminders. The first implementation should not depend on a backend, sync, LLM, booking, automatic import, live flight tracking, route optimization, own routing, collaboration, or full offline maps.
+The MVP should be a local-first mobile app where a `Trip` is the user's single workspace for days, places, offline map context, flights, housing, notes, and optional checklists/reminders. The first implementation should not depend on a backend, sync, LLM, booking, automatic import, live flight tracking, route optimization, own routing, or collaboration. Offline map download for the prepared trip area is now a mandatory MVP capability.
 
 The current `app/mobile/App.tsx` is a static Expo screen. The implementation architecture below turns it into a small, testable Expo application with explicit module boundaries, typed domain models, local persistence, provider adapters for map/search/navigation, and feature slices that can be built independently.
 
@@ -26,7 +26,7 @@ The current `app/mobile/App.tsx` is a static Expo screen. The implementation arc
 9. The user can open a place or housing address in external maps. The app passes coordinates or a textual address to the device map URL. Navigation remains outside the app.
 10. Flights and housing are entered manually as stable text records. No live status, gate automation, booking import, or disruption support exists in MVP.
 11. Notes can belong to a trip, day, or object. Checklists are simple local lists only if they pass the first-release scope gate.
-12. Saved trip text/details remain readable without network because they are stored on device. Place search, geocoding, fresh map tiles, and external navigation may require network or another installed app and must show clear degraded states.
+12. Saved trip text/details remain readable without network because they are stored on device. The prepared trip map area must be downloadable before travel and readable without network. Place search, geocoding, fresh map areas outside the downloaded region, and external navigation may require network or another installed app and must show clear degraded states.
 
 ## Architecture Proposal
 
@@ -202,10 +202,11 @@ interface ExternalNavigationService {
 MVP behavior:
 
 - search/geocoding failures do not block manual place creation;
-- map display shows pins for saved coordinates only;
+- map display shows pins for saved coordinates;
+- offline map display shows saved points inside the downloaded trip area;
 - missing coordinates are visible in lists;
 - external navigation uses coordinates when present, otherwise address text;
-- when network or provider calls are unavailable, search shows manual-entry fallback, map falls back to saved lists/details, and navigation shows an unavailable/retry state if the device cannot open the target;
+- when network or provider calls are unavailable, search shows manual-entry fallback, the downloaded offline map remains usable for its prepared area, and navigation shows an unavailable/retry state if the device cannot open the target;
 - no in-app route calculation or optimization.
 
 ### Today And Day Planning
@@ -309,22 +310,23 @@ Place/Housing detail
   -> Linking opens installed/browser map
 ```
 
-Offline saved-detail flow:
+Offline travel flow:
 
 ```text
 App open
   -> local database initializes
   -> active trip is loaded locally
   -> saved text details are readable
+  -> downloaded trip map area opens and shows saved points
   -> online-only actions show unavailable/retry states if network is absent
 ```
 
 Offline boundary:
 
 - Included: previously saved trips, days, day items, places, flights, housing, notes, and included checklists are readable from local storage.
-- Best effort: map screens may render cached provider tiles if the provider/device happens to have them, but the app must not promise this and must keep list/detail access usable when the map cannot load.
-- Unavailable offline: new place search, geocoding, fresh map tiles, external navigation that requires network or another app response, live data, routing, route optimization, and sync.
-- UI copy must use "saved details" language, not "offline maps" or "offline navigation".
+- Included: downloaded offline map region for the prepared trip area, with saved points displayed.
+- Unavailable offline unless the chosen provider supports it in MVP: new place search, geocoding, external navigation that requires network or another app response, routing, route optimization, live data, and sync.
+- UI copy must distinguish "offline map available for downloaded area" from "offline routing/navigation".
 
 ## Testing Strategy
 
@@ -347,13 +349,13 @@ Owner decisions that remain `Proposed`:
 - concrete place search/geocoding provider;
 - whether checklists are included in first release or implemented after Must flows;
 - whether local notifications are included in first release or deferred;
-- minimum offline copy wording in UI: "saved details available offline" rather than "offline mode".
+- minimum offline copy wording in UI: "saved details and downloaded map available offline" without promising offline routing.
 
 ## Risks
 
 - Map/search provider selection can create cost, API key, and Expo compatibility risk. Keep adapters thin and spike before broad map work.
 - Manual entry loses value if forms require too many fields. Keep save actions tolerant of incomplete data.
-- Offline language can overpromise. UI and docs must avoid implying offline maps or routing.
+- Offline language can overpromise. UI and docs must distinguish offline map viewing from offline routing/navigation.
 - Local-only MVP can lose data if the device is lost. Backup/export is post-MVP unless owner changes scope.
 - Optional reminders can distract from Must flows. Implement only after core trip workspace is usable.
 

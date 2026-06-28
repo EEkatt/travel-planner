@@ -28,7 +28,7 @@ Draft
 - As a traveler, I want automatic flight and booking import so that I can reduce manual entry.
 - As a traveler, I want live flight tracking so that I can react to delays and gate changes.
 - As a traveler, I want to book flights, hotels, or activities inside the app so that planning and purchase happen in one product.
-- As a traveler, I want full offline maps so that I can navigate without internet.
+- As a traveler, I want to download the trip map before travel so that I can view saved places without internet.
 
 ## MVP Story Boundaries
 

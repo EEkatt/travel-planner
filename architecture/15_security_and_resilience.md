@@ -95,7 +95,7 @@ Provider risks to check in Gate 00:
 
 - Saved local data must remain readable after app restart.
 - Failed provider calls must not block manual entry.
-- Weak network must degrade to saved lists/details where possible.
+- Weak network must not break saved trip details or the preloaded offline map.
 - Missing coordinates must not break day plans.
 - Missing target records must not destroy day item readability.
 - Notification permission denial must not delete reminder intent.
@@ -106,7 +106,9 @@ Provider risks to check in Gate 00:
 | Failure | Expected MVP behavior |
 | --- | --- |
 | No network during place search | User can add place manually by title/address text. |
-| Map tiles or provider unavailable | Show saved place/day list and a clear unavailable map state. |
+| Offline map not downloaded before trip | Show a clear preparation warning and keep saved place/day lists available. |
+| Network unavailable after offline map download | Show the downloaded map area and saved trip points without network. |
+| Map provider unavailable for online search | Keep offline map and saved lists available; user can add places manually. |
 | External navigation unavailable | Show address/details and explain navigation cannot be opened. |
 | App restart | Previously saved trip data is readable. |
 | Migration failure | Do not silently corrupt data; show recoverable error during development and log sanitized error. |
@@ -127,12 +129,13 @@ Early slices:
 - trip survives app reload;
 - manual place works without network;
 - day item stale target behavior is deterministic;
+- downloaded offline map opens without network and shows saved points;
 - map/search unavailable states are visible and do not crash the app;
-- UI copy does not promise offline maps, route optimization, live flight tracking, booking import, collaboration, or LLM.
+- UI copy does not promise route optimization, live flight tracking, booking import, collaboration, or LLM.
 
 ## Open Questions
 
 - Is device-level protection enough for the private MVP?
 - Do we need manual export/backup before real travel use?
-- Which map/search provider sends what data during search/geocoding?
+- Which map provider supports reliable offline map download for both iOS and Android in our Expo/React Native architecture?
 - Should crash reporting be disabled until sanitization rules are implemented?

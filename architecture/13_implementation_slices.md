@@ -14,7 +14,7 @@ Split the React Native/Expo + TypeScript MVP into small slices that can be imple
 - Each slice must include tests or a concrete testable acceptance path.
 - Must-have flows come before Should-have flows.
 - Provider-dependent work starts behind interfaces.
-- No backend, sync, collaboration, LLM, booking, automatic import, live flight tracking, route optimization, own routing, or full offline maps.
+- No backend, sync, collaboration, LLM, booking, automatic import, live flight tracking, route optimization, or own routing. Offline map download for the prepared trip area is in MVP scope.
 
 ## Gate 00 - Technical Decisions And Test Harness
 
@@ -23,7 +23,7 @@ Scope:
 - choose the Expo-compatible SQLite package and migration approach;
 - choose navigation library/structure for trip list, workspace tabs, modals, and detail screens;
 - choose the unit/component/repository/E2E or smoke test stack;
-- choose or shortlist the MVP map display provider;
+- choose the MVP map display provider with offline map download support;
 - choose or shortlist the MVP search/geocoding provider;
 - update `architecture/12_decisions.md` with accepted choices or bounded fallback notes.
 
@@ -31,7 +31,7 @@ Out of scope:
 
 - production feature UI;
 - provider runtime switching;
-- backend, sync, offline maps, routing, booking, automatic import, or LLM.
+- backend, sync, routing, booking, automatic import, or LLM.
 
 Tests/checks:
 
@@ -39,12 +39,13 @@ Tests/checks:
 - navigation proof for `Today / Days / Map` plus one modal/detail route;
 - pure domain test, React Native component test, and repository integration test can run locally;
 - map adapter can render or be mocked with normalized pins;
+- offline map provider can download and reopen a bounded region, or the provider is rejected for MVP;
 - search provider can return normalized result fixtures and expose offline/error fallback.
 
 Acceptance criteria:
 
 - implementation dependencies are recorded as decisions before broad feature work;
-- unresolved provider risk has a named fallback that preserves Must flows, such as manual place entry or list-only map fallback;
+- unresolved provider risk blocks broad map implementation because offline map is now a Must requirement;
 - no user-facing feature is added by the gate.
 
 ## First-Release Scope Gate For Should Features
@@ -56,10 +57,10 @@ Checklists:
 - Include in first release only if simple local CRUD and quick access do not delay Must flow completion.
 - If deferred, remove checklist entry points or show a non-broken deferred state; do not leave dead navigation.
 
-Cached saved details:
+Offline map and saved details:
 
-- Include in first release only as local readability of saved records and unavailable states for online-only actions.
-- Defer anything requiring offline map tiles, offline search/geocoding, routing, sync, backup/export, or background workers.
+- Include local readability of saved records and offline map download for the prepared trip area in first release.
+- Defer offline search/geocoding, routing, sync, backup/export, or background workers unless the chosen provider supports them with minimal MVP complexity.
 
 Reminders:
 
@@ -289,20 +290,22 @@ Acceptance criteria:
 
 Scope:
 
-- choose MVP map display provider after spike;
+- choose MVP map display provider with offline map download support after Gate 00 spike;
 - implement trip map with all coordinate-backed places;
 - implement day map/context with selected day's coordinate-backed items;
+- implement downloaded area status for the prepared trip map;
 - show list fallback for places without coordinates.
 
 Out of scope:
 
-- offline maps;
 - own route lines unless drawn only as simple visual order with no routing claim;
+- offline routing unless provider support is explicitly accepted;
 - traffic, travel times, optimization.
 
 Tests:
 
 - adapter receives only normalized coordinates and labels;
+- downloaded map area can be represented in adapter state and tested with a mock provider;
 - map screen handles zero pins;
 - map screen handles mixed coordinate and non-coordinate places;
 - map unavailable/provider failure falls back to saved list/detail access;
@@ -464,36 +467,38 @@ Acceptance criteria:
 - if deferred, quick access should not show a broken entry point.
 - if included, checklist scope remains simple local CRUD only.
 
-## Slice 13 - Saved Details Offline Behavior
+## Slice 13 - Offline Travel Behavior
 
 Scope:
 
 - ensure local reads work without network;
+- ensure downloaded map region opens without network and shows saved points;
 - add network status service for online-only actions;
-- show clear copy for unavailable search/geocoding/map tile/external navigation conditions;
+- show clear copy for unavailable search/geocoding/external navigation conditions;
 - verify app opens saved trip details after restart with network disabled.
 
 Out of scope:
 
-- offline map tiles;
 - offline geocoding;
-- offline routing;
+- offline routing unless separately accepted after provider validation;
 - sync conflict handling.
 
 Tests:
 
 - saved trip opens with mocked offline status;
 - saved day, day items with stale display snapshots, places, flights, housing, notes, and included checklists render offline;
+- downloaded map region opens with saved points using a mocked offline map provider;
 - search action shows unavailable/manual fallback state;
-- map provider/tile failure falls back to list/detail view;
+- missing downloaded map region shows a preparation warning and keeps list/detail view available;
 - external navigation unavailable state is shown without losing the saved address/coordinates;
-- no "offline maps" wording appears in UI strings.
+- UI strings distinguish offline map viewing from offline routing/navigation.
 
 Acceptance criteria:
 
 - saved text details are readable without network;
+- downloaded map area is readable without network;
 - online-only capabilities are clearly separated.
-- implementation does not claim offline maps, offline search, offline routing, or provider-independent navigation.
+- implementation does not claim offline search, offline routing, or provider-independent navigation unless separately accepted.
 
 ## Slice 14 - Basic Reminders
 

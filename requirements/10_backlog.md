@@ -62,14 +62,14 @@ Draft
 | BL-L-004 | EPIC-002 | Автоматическая оптимизация маршрута и собственная маршрутизация. | Later | MVP использует внешний map handoff. | Draft |
 | BL-L-005 | EPIC-011 | Совместное редактирование, роли и права доступа. | Later | MVP проверяет личную поездку. | Draft |
 | BL-L-006 | EPIC-012 | Покупка билетов, бронирование жилья и платежи. | Later | MVP не заменяет booking-сервисы. | Draft |
-| BL-L-007 | EPIC-008 | Полноценные офлайн-карты и офлайн-маршрутизация. | Later | В MVP допускаются только сохраненные детали. | Draft |
+| BL-L-007 | EPIC-008 | Офлайн-маршрутизация. | Later | MVP обязан поддержать загруженную офлайн-карту, но построение маршрута без сети требует отдельного решения по провайдеру. | Draft |
 
 ## Research And Decision Tasks
 
 | ID | Task | Owner | Priority | Status |
 | --- | --- | --- | --- | --- |
 | R-001 | Сравнить аналоги. | Market Research Agent | Must | Done |
-| R-002 | Сравнить карты для поиска, отображения точек и внешнего handoff. | Technical Architect | Must | Draft |
+| R-002 | Выбрать карту с поддержкой офлайн-загрузки области поездки, поиска, отображения точек и внешнего handoff. | Technical Architect | Must | Draft |
 | R-003 | Выбрать мобильный стек. | Technical Architect | Must | Draft |
 | R-004 | Подтвердить главный экран `Сегодня / Дни / Карта`. | Product Analyst + UX Designer | Must | Draft |
 | R-005 | Уточнить обязательные поля для ручного ввода рейса и жилья. | Product Analyst + Requirements Analyst | Must | Draft |

@@ -117,14 +117,15 @@ Status: Proposed
 
 Context:
 
-Checklists, cached saved details, and reminders are `Should` items. They are valuable, but Must flows must remain implementable and testable before optional scope expands the release.
+Checklists and reminders are `Should` items. Cached saved details and offline map download are now `Must` items after owner clarification. Must flows must remain implementable and testable before optional scope expands the release.
 
 Decision:
 
 Use a first-release scope gate after Must flows are usable:
 
 - Checklists include now only if simple local CRUD and quick access fit without delaying trip creation, places, maps, day planning, flights, housing, and notes. If deferred, quick access must hide or show a non-broken placeholder rather than a dead entry point.
-- Cached saved details include now only as verification of local readability for already saved data. It must not add offline maps, offline search, offline routing, sync, backup, or background workers.
+- Saved details are in MVP as local readability for already saved data.
+- Offline map download for the prepared trip area is in MVP and must be decided during Gate 00.
 - Reminders include now only if local notification scheduling is technically simple, permission handling is clear, and no Must flow depends on it. Otherwise store no reminder UI in first release and defer the slice.
 
 Consequences:
@@ -163,11 +164,11 @@ Status: Accepted
 
 Context:
 
-MVP requirements explicitly need external map handoff and exclude route optimization, own routing, and full offline maps.
+MVP requirements need external map handoff and offline map download for the prepared trip area. They still exclude route optimization and own routing unless the chosen provider supports offline routing with minimal MVP complexity and explicit approval.
 
 Decision:
 
-Implement "open in maps" using coordinates or address text. Do not calculate routes, optimize order, estimate travel time, or provide offline navigation in the MVP.
+Implement "open in maps" using coordinates or address text. Do not calculate routes, optimize order, estimate travel time, or provide offline navigation in the MVP unless separately approved after provider validation.
 
 Consequences:
 
@@ -181,15 +182,15 @@ Links:
 
 ## 2026-06-28 - Cached Saved Details Boundary
 
-Status: Proposed
+Status: Superseded
 
 Context:
 
-Users need access to critical saved details during weak network conditions, but full offline maps and routing are explicitly outside MVP.
+Users need access to critical saved details during weak network conditions. This decision originally kept offline maps outside MVP.
 
 Decision:
 
-Treat offline support as local readability of saved trip data: trip, days, places, flights, housing, notes, and checklists should remain readable after saving. Do not promise offline map tiles, offline search/geocoding, or offline route building.
+Superseded by the owner decision that offline map download for the prepared trip area is mandatory in MVP.
 
 First-release include criteria:
 
@@ -198,12 +199,37 @@ First-release include criteria:
 
 Consequences:
 
-This covers the highest-value travel failure mode without tile caching, route engines, or sync conflict handling. UI copy must say saved details are available, not that the whole app works offline.
+This decision is retained for history only. Current direction is captured in `2026-06-28 - Offline Map Download Is MVP Scope`.
 
 Links:
 
 - `architecture/11_architecture.md`
 - `requirements/08_mvp.md`
+
+## 2026-06-28 - Offline Map Download Is MVP Scope
+
+Status: Accepted
+
+Context:
+
+The project owner clarified that the map must work during travel without internet. During trip preparation, the user should be able to download the required map area. Saved trip details, bookings, flights, notes, contacts, and map context must remain usable offline.
+
+Decision:
+
+Offline map download for the prepared trip area is a Must MVP capability. Gate 00 must choose a map provider and implementation path that supports offline map download on iOS and Android within the React Native/Expo architecture, or explicitly document why the chosen stack must change.
+
+Offline routing is not automatically included. If the chosen provider supports offline routing with reasonable MVP complexity, it can be proposed separately. Otherwise the MVP must clearly distinguish offline map viewing from offline navigation/routing.
+
+Consequences:
+
+Map provider selection is now a blocking foundation decision. The app can no longer rely on best-effort cached provider tiles or list-only fallback as the primary offline map story. Offline map storage size, licensing, API keys, provider terms, and Expo compatibility must be checked before broad map implementation.
+
+Links:
+
+- `requirements/07_requirements.md`
+- `requirements/08_mvp.md`
+- `architecture/11_architecture.md`
+- `architecture/13_implementation_slices.md`
 
 ## 2026-06-28 - Today Is Derived Locally
 

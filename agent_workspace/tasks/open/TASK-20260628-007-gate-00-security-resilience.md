@@ -18,7 +18,7 @@ Gate 00 must select the minimum technical foundation and verify security/resilie
 - SQLite/local storage package and migration approach.
 - Navigation structure.
 - Test stack.
-- Map display provider path.
+- Map display provider path with offline map download support for the prepared trip area.
 - Place search/geocoding provider path.
 - Manual fallback behavior for provider failures.
 - Logging/privacy baseline.
@@ -41,7 +41,7 @@ Gate 00 must select the minimum technical foundation and verify security/resilie
 - Technical spike notes.
 - Minimal test setup.
 - Local storage restart-read proof.
-- Provider fallback notes.
+- Provider offline-map capability notes and fallback constraints.
 - Security/resilience checklist updates.
 
 ## Acceptance Criteria
@@ -50,11 +50,11 @@ Gate 00 must select the minimum technical foundation and verify security/resilie
 - Test command exists.
 - Domain test can run.
 - Storage spike proves create/read/restart-read or records the selected implementation plan.
-- Map/search provider risk is bounded.
+- Map/search provider risk is bounded, including offline map download for iOS and Android.
 - Private trip data logging rules are documented.
 - Must MVP implementation can start without unresolved foundation choices.
 
 ## Scope Boundaries
 
 - Do not build product features before foundation choices.
-- Do not add backend, sync, LLM, collaboration, booking, automatic import, route optimization, live flight tracking, own routing, or full offline maps.
+- Do not add backend, sync, LLM, collaboration, booking, automatic import, route optimization, live flight tracking, or own routing.
