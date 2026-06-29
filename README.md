@@ -8,6 +8,7 @@
 - `research/` - market research и feature matrix конкурентов.
 - `requirements/` - user stories, use cases, требования, MVP и backlog.
 - `architecture/` - архитектура и архитектурные решения.
+- `testing/` - требования к качеству, стратегия тестирования, инженерная зрелость, security, CI gates и каталог тестов.
 - `project/` - roadmap и проектное планирование.
 - `process/` - принципы, Definition of Done, change log и glossary.
 - `agents/` - описание агентской системы и инструкции агентов.
@@ -26,6 +27,15 @@
 - `requirements/08_mvp.md` - состав MVP.
 - `architecture/11_architecture.md` - архитектурная рамка.
 - `architecture/15_security_and_resilience.md` - базовые правила безопасности и устойчивости MVP.
+- `testing/01_quality_requirements.md` - требования к качеству и quality gates.
+- `testing/02_test_strategy.md` - стратегия тестирования MVP.
+- `testing/03_test_inventory.md` - каталог нужных тестов приложения.
+- `testing/04_code_quality_requirements.md` - требования к качеству кода.
+- `testing/05_project_structure_quality.md` - требования к структуре проекта.
+- `testing/06_security_quality_requirements.md` - требования к безопасности и приватности.
+- `testing/07_test_policy.md` - политика тестирования изменений.
+- `testing/08_release_quality_checklist.md` - релизный чеклист качества.
+- `testing/09_ci_quality_gates.md` - CI quality gates.
 - `agents/15_agent_workflow.md` - workflow агентов.
 - `process/glossary.md` - словарь терминов.
 

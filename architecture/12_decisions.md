@@ -2,7 +2,7 @@
 
 ## Status
 
-Draft. Iteration 01 architecture decisions.
+Living decision log. Accepted decisions are binding until superseded. Proposed decisions require Gate 00 proof, owner approval, or implementation validation before broad dependent work starts.
 
 ## Decision Format
 
@@ -44,7 +44,7 @@ Links:
 
 ## 2026-06-28 - Local-First MVP Source Of Truth
 
-Status: Proposed
+Status: Accepted
 
 Context:
 
@@ -66,7 +66,7 @@ Links:
 
 ## 2026-06-28 - SQLite-Backed Persistence
 
-Status: Proposed
+Status: Accepted
 
 Context:
 
@@ -87,7 +87,7 @@ Links:
 
 ## 2026-06-28 - Technical Decision Gate Before Broad Feature Work
 
-Status: Proposed
+Status: Accepted
 
 Context:
 
@@ -113,7 +113,7 @@ Links:
 
 ## 2026-06-28 - First-Release Scope Gate For Should Features
 
-Status: Proposed
+Status: Accepted
 
 Context:
 
@@ -140,7 +140,7 @@ Links:
 
 ## 2026-06-28 - Provider Boundaries For Map, Search, Navigation, Notifications
 
-Status: Proposed
+Status: Accepted
 
 Context:
 
@@ -234,7 +234,7 @@ Links:
 
 ## 2026-06-29 - MapLibre Offline Map Spike Path
 
-Status: Proposed
+Status: Accepted
 
 Context:
 
@@ -243,6 +243,8 @@ Offline map download for the prepared trip area is a Must MVP capability. Curren
 Decision:
 
 Use MapLibre React Native as the first implementation spike path for offline map display and saved trip points. The spike must use Expo development builds, not Expo Go. Do not start broad map implementation until provider licensing/offline limits, pack size, iOS build, Android build, network-off rendering, and saved point rendering are proven.
+
+This accepts the spike path, not the final production provider.
 
 Consequences:
 
@@ -255,7 +257,7 @@ Links:
 
 ## 2026-06-28 - Today Is Derived Locally
 
-Status: Proposed
+Status: Accepted
 
 Context:
 

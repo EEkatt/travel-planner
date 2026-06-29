@@ -27,6 +27,16 @@ Scope:
 - choose or shortlist the MVP search/geocoding provider;
 - update `architecture/12_decisions.md` with accepted choices or bounded fallback notes.
 
+Gate 00 should be executed as separate bounded decision tasks, not as one large implementation task:
+
+- `G00-01` - storage package, migration approach, and restart-read proof;
+- `G00-02` - navigation structure proof for trip list, workspace tabs, modal/detail screens;
+- `G00-03` - test stack and first runnable `typecheck`/unit/component/repository commands;
+- `G00-04` - map provider implementation spike with offline prepared-area download proof;
+- `G00-05` - place search/geocoding provider shortlist and manual fallback proof.
+
+Each Gate 00 task must end with either an accepted decision, a rejected option with reason, or a bounded fallback note.
+
 Out of scope:
 
 - production feature UI;
@@ -573,7 +583,7 @@ Acceptance criteria:
 13. Slice 11 - Notes
 14. First-release scope gate for Should features
 15. Slice 12 - Checklists, only if included by scope gate
-16. Slice 13 - Saved Details Offline Behavior, only as saved-detail readability
+16. Slice 13 - Offline Travel Behavior, including saved-detail readability and downloaded map area
 17. Slice 14 - Basic Reminders, only if included by scope gate
 18. Slice 15 - MVP Hardening
 
@@ -585,5 +595,5 @@ Acceptance criteria:
 - Map display provider.
 - Place search/geocoding provider.
 - Whether checklists are first release or immediately after Must flows.
-- Whether cached saved-detail verification is first release or immediately after Must flows.
+- Offline map provider implementation proof and provider terms for prepared-area downloads.
 - Whether reminders are first release or deferred.

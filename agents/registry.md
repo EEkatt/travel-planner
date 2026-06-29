@@ -20,6 +20,12 @@ Lead Agent communicates with the project owner in Russian by default.
 | `technical_analyst` | Technical Analyst Agent | Specialist | Technical options and architecture recommendations | `prompts/agents/technical_analyst.prompt.md` | `agents/analytics/technical_analyst.md` |
 | `architecture_agent` | Architecture Agent | Specialist | Propose MVP application architecture and implementation slices | `prompts/agents/architecture_agent.prompt.md` | `agents/architecture/architecture_agent.md` |
 | `architecture_critic` | Architecture Critic Agent | Reviewer | Critique architecture proposals and force revisions | `prompts/agents/architecture_critic.prompt.md` | `agents/architecture/architecture_critic.md` |
+| `quality_lead` | Quality Lead Agent | Coordinator | Own quality gates, testing strategy, risk-based QA priorities, and QA task decomposition | `prompts/agents/quality_lead.prompt.md` | `agents/testing/quality_lead.md` |
+| `qa_engineer` | QA Engineer Agent | Specialist | Design and execute manual, exploratory, and acceptance tests | `prompts/agents/qa_engineer.prompt.md` | `agents/testing/qa_engineer.md` |
+| `test_automation_engineer` | Test Automation Engineer Agent | Specialist | Design and implement automated test infrastructure and regression checks | `prompts/agents/test_automation_engineer.prompt.md` | `agents/testing/test_automation_engineer.md` |
+| `code_quality_reviewer` | Code Quality Reviewer Agent | Reviewer | Review maintainability, structure, TypeScript quality, and testability | `prompts/agents/code_quality_reviewer.prompt.md` | `agents/testing/code_quality_reviewer.md` |
+| `security_reviewer` | Security Reviewer Agent | Reviewer | Review privacy, security, logging, permissions, dependencies, and local data risks | `prompts/agents/security_reviewer.prompt.md` | `agents/testing/security_reviewer.md` |
+| `release_qa` | Release QA Agent | Reviewer | Validate release candidates, smoke tests, regression evidence, and known issues | `prompts/agents/release_qa.prompt.md` | `agents/testing/release_qa.md` |
 
 ## Authority Model
 
