@@ -230,6 +230,7 @@ Links:
 - `requirements/08_mvp.md`
 - `architecture/11_architecture.md`
 - `architecture/13_implementation_slices.md`
+- `architecture/16_offline_map_provider_research.md`
 
 ## 2026-06-28 - Today Is Derived Locally
 
