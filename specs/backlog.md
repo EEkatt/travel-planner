@@ -1,5 +1,8 @@
 # Backlog
 
+> Archived / legacy draft. Kept for historical context only.
+> Current backlog is `requirements/10_backlog.md`.
+
 ## Правила
 
 - Каждая задача должна быть связана с требованием или решением.

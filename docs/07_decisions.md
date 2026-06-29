@@ -1,5 +1,8 @@
 # Журнал решений
 
+> Archived / legacy draft. Kept for historical context only.
+> Current decision log is `architecture/12_decisions.md`.
+
 ## Назначение
 
 Здесь фиксируются важные продуктовые, технические и процессные решения.

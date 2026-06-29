@@ -1,5 +1,8 @@
 # Идея приложения
 
+> Archived / legacy draft. Kept for historical context only.
+> Current sources of truth are `product/`, `requirements/`, `architecture/`, `testing/`, and `process/`.
+
 ## Краткое описание
 
 Приложение для агрегации и планирования путешествий: все важное в одном месте, чтобы удобно готовиться к поездке и пользоваться планом во время путешествия.

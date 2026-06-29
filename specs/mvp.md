@@ -1,5 +1,8 @@
 # MVP
 
+> Archived / legacy draft. Kept for historical context only.
+> Current MVP definition is `requirements/08_mvp.md`.
+
 ## Цель MVP
 
 Проверить, что пользователю удобно держать план путешествия в одном месте: карту с точками, маршруты по дням, общий маршрут, брони и заметки.

@@ -1,5 +1,8 @@
 # Архитектура
 
+> Archived / legacy draft. Kept for historical context only.
+> Current architecture is in `architecture/`.
+
 ## Статус
 
 Черновик. Заполняется после выбора стека и MVP.

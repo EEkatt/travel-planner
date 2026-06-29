@@ -1,5 +1,8 @@
 # Продуктовые требования
 
+> Archived / legacy draft. Kept for historical context only.
+> Current requirements are in `requirements/`.
+
 ## Статус
 
 Черновик. Требует заполнения после описания идеи.

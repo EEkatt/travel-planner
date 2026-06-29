@@ -1,5 +1,8 @@
 # Технические требования
 
+> Archived / legacy draft. Kept for historical context only.
+> Current architecture and technical decisions are in `architecture/`.
+
 ## Статус
 
 Черновик. Требует выбора платформы и стека.
