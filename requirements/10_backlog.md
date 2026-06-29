@@ -69,7 +69,7 @@ Draft
 | ID | Task | Owner | Priority | Status |
 | --- | --- | --- | --- | --- |
 | R-001 | Сравнить аналоги. | Market Research Agent | Must | Done |
-| R-002 | Выбрать карту с поддержкой офлайн-загрузки области поездки, поиска, отображения точек и внешнего handoff. | Technical Architect | Must | Draft |
+| R-002 | Выбрать карту с поддержкой офлайн-загрузки области поездки, поиска, отображения точек и внешнего handoff. | Technical Architect | Must | In Progress - `TASK-20260629-008` |
 | R-003 | Выбрать мобильный стек. | Technical Architect | Must | Draft |
 | R-004 | Подтвердить главный экран `Сегодня / Дни / Карта`. | Product Analyst + UX Designer | Must | Draft |
 | R-005 | Уточнить обязательные поля для ручного ввода рейса и жилья. | Product Analyst + Requirements Analyst | Must | Draft |

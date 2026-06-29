@@ -232,6 +232,27 @@ Links:
 - `architecture/13_implementation_slices.md`
 - `architecture/16_offline_map_provider_research.md`
 
+## 2026-06-29 - MapLibre Offline Map Spike Path
+
+Status: Proposed
+
+Context:
+
+Offline map download for the prepared trip area is a Must MVP capability. Current research found that MapLibre React Native supports Expo setup but not Expo Go, has an `OfflineManager.createPack` API for bounded offline regions, and appears compatible with the current Expo 56 / React Native 0.85 baseline at the peer-dependency level.
+
+Decision:
+
+Use MapLibre React Native as the first implementation spike path for offline map display and saved trip points. The spike must use Expo development builds, not Expo Go. Do not start broad map implementation until provider licensing/offline limits, pack size, iOS build, Android build, network-off rendering, and saved point rendering are proven.
+
+Consequences:
+
+The app likely needs `@maplibre/maplibre-react-native`, the MapLibre Expo config plugin, and `expo-dev-client`. Tile/style provider selection becomes a release-blocking decision. Offline routing remains out of MVP unless separately proven and approved.
+
+Links:
+
+- `architecture/16_offline_map_provider_research.md`
+- `agent_workspace/reports/TASK-20260629-008-maplibre-offline-map-spike-report.md`
+
 ## 2026-06-28 - Today Is Derived Locally
 
 Status: Proposed
