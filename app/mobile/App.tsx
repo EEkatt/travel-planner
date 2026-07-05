@@ -23,7 +23,7 @@ import {
 } from './src/domain/map';
 import { MockRoutingProvider } from './src/services/mockRoutingProvider';
 
-type TabId = 'today' | 'days' | 'map';
+type TabId = 'today' | 'days' | 'map' | 'notes';
 type MapDay = 'Без дня' | `День ${number}`;
 type MapFilter = 'Все' | MapDay;
 type TripDay = { id: DayId; label: Exclude<MapDay, 'Без дня'> };
@@ -36,6 +36,13 @@ type TripSummary = {
   id: string;
   status: TripStatus;
   title: string;
+};
+
+type TripNote = {
+  body: string;
+  id: string;
+  title: string;
+  updatedAt: string;
 };
 
 type PlaceSuggestion = {
@@ -88,6 +95,7 @@ const tabs: Array<{ id: TabId; label: string }> = [
   { id: 'today', label: 'Сегодня' },
   { id: 'days', label: 'Дни' },
   { id: 'map', label: 'Карта' },
+  { id: 'notes', label: 'Заметки' },
 ];
 
 const quickActions = ['Жилье', 'Рейсы', 'Заметки'];
@@ -108,6 +116,14 @@ const initialTrips: TripSummary[] = [
     id: 'trip-georgia',
     status: 'plan',
     title: 'Грузия',
+  },
+];
+const defaultTripNotes: TripNote[] = [
+  {
+    body: 'Экстренные службы: 112. Посольство/консульство: добавьте адрес и телефон перед поездкой. Адрес жилья, контакты хозяина, страховая и важные бронирования лучше держать здесь офлайн.',
+    id: 'note-important-georgia',
+    title: 'Важные контакты и адреса страны',
+    updatedAt: 'сегодня',
   },
 ];
 
@@ -860,6 +876,7 @@ export default function App() {
   const [places, setPlaces] = useState<Place[]>(SHARED_PLACES);
   const [dayItems, setDayItems] = useState<DayItem[]>(SHARED_DAY_ITEMS);
   const [days, setDays] = useState<TripDay[]>(defaultTripDays);
+  const [notes, setNotes] = useState<TripNote[]>(defaultTripNotes);
   const [routePlans, setRoutePlans] = useState<RoutePlan[]>([MOCK_DAY_1_ROUTE_PLAN]);
   const routingProvider = useMemo(() => new MockRoutingProvider(), []);
   const selectedTrip = selectedTripId ? trips.find((candidate) => candidate.id === selectedTripId) ?? null : null;
@@ -881,6 +898,23 @@ export default function App() {
     if (selectedTripId === tripId) {
       setSelectedTripId(null);
     }
+  };
+
+  const addNote = () => {
+    const nextNumber = notes.length + 1;
+    setNotes((currentNotes) => [
+      ...currentNotes,
+      {
+        body: '',
+        id: `note-${Date.now()}`,
+        title: `Новая заметка ${nextNumber}`,
+        updatedAt: 'сейчас',
+      },
+    ]);
+  };
+
+  const deleteNote = (noteId: string) => {
+    setNotes((currentNotes) => currentNotes.filter((note) => note.id !== noteId));
   };
 
   const addDay = () => {
@@ -1163,6 +1197,13 @@ export default function App() {
             routePlans={routePlans}
           />
         )}
+        {activeTab === 'notes' && (
+          <NotesView
+            notes={notes}
+            onAddNote={addNote}
+            onDeleteNote={deleteNote}
+          />
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -1438,6 +1479,102 @@ function TripSummaryCard({
             style={[styles.swipeActionButton, styles.swipeDeleteButton]}
             onPress={() => {
               onDeleteTrip(trip.id);
+              setIsActionsOpen(false);
+            }}
+          >
+            <Text style={styles.swipeDeleteButtonText}>Удалить</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function NotesView({
+  notes,
+  onAddNote,
+  onDeleteNote,
+}: {
+  notes: TripNote[];
+  onAddNote: () => void;
+  onDeleteNote: (noteId: string) => void;
+}) {
+  return (
+    <>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Заметки</Text>
+        <TouchableOpacity onPress={onAddNote}>
+          <Text style={styles.sectionAction}>Добавить заметку</Text>
+        </TouchableOpacity>
+      </View>
+      <View style={styles.noteList}>
+        {notes.map((note) => (
+          <NoteCard
+            key={note.id}
+            note={note}
+            onDeleteNote={onDeleteNote}
+          />
+        ))}
+      </View>
+    </>
+  );
+}
+
+function NoteCard({
+  note,
+  onDeleteNote,
+}: {
+  note: TripNote;
+  onDeleteNote: (noteId: string) => void;
+}) {
+  const [swipeOffsetX, setSwipeOffsetX] = useState(0);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const previewText = note.body.trim() || 'Пустая заметка';
+  const panResponder = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dx) > 8,
+    onPanResponderGrant: () => {
+      setSwipeOffsetX(0);
+    },
+    onPanResponderMove: (_, gestureState) => {
+      setSwipeOffsetX(clamp(gestureState.dx, -swipePreviewLimit, swipePreviewLimit));
+    },
+    onPanResponderRelease: (_, gestureState) => {
+      const isIntentionalSwipe = Math.abs(gestureState.dx) >= swipeActionThreshold;
+
+      if (isIntentionalSwipe) {
+        setIsActionsOpen((value) => !value);
+      } else {
+        setIsActionsOpen(false);
+      }
+      setSwipeOffsetX(0);
+    },
+    onPanResponderTerminate: () => {
+      setSwipeOffsetX(0);
+    },
+  }), []);
+
+  return (
+    <View>
+      <Pressable
+        style={[
+          styles.noteCard,
+          swipeOffsetX !== 0 && styles.draggingPlaceCard,
+          swipeOffsetX !== 0 && { transform: [{ translateX: swipeOffsetX }] },
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <View style={styles.noteText}>
+          <Text style={styles.noteTitle}>{note.title}</Text>
+          <Text numberOfLines={2} style={styles.notePreview}>{previewText}</Text>
+        </View>
+        <Text style={styles.noteDate}>{note.updatedAt}</Text>
+      </Pressable>
+      {isActionsOpen ? (
+        <View style={styles.swipeActions}>
+          <TouchableOpacity
+            style={[styles.swipeActionButton, styles.swipeDeleteButton]}
+            onPress={() => {
+              onDeleteNote(note.id);
               setIsActionsOpen(false);
             }}
           >
@@ -2617,6 +2754,42 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     padding: 15,
+  },
+  noteList: {
+    gap: 10,
+    marginBottom: 18,
+  },
+  noteCard: {
+    alignItems: 'flex-start',
+    backgroundColor: '#ffffff',
+    borderColor: '#dce3da',
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+    padding: 14,
+  },
+  noteText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  noteTitle: {
+    color: '#1d261f',
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  notePreview: {
+    color: '#657063',
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 5,
+  },
+  noteDate: {
+    color: '#8b9489',
+    fontSize: 12,
+    fontWeight: '700',
+    marginTop: 2,
   },
   tabs: {
     backgroundColor: '#e7ece5',
