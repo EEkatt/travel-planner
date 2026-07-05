@@ -248,6 +248,7 @@ export function buildMapViewSnapshot({
 }: BuildMapViewInput): MapViewSnapshot {
   const tripPlaces = places.filter((place) => place.tripId === tripId);
   const tripDayItems = dayItems.filter((item) => item.tripId === tripId);
+  const tripRoutePlans = routePlans.filter((plan) => plan.tripId === tripId);
 
   const relevantPlaces = tripPlaces.filter((place) => {
     const dayItem = getDayItemForPlace(tripDayItems, place.id);
@@ -288,7 +289,7 @@ export function buildMapViewSnapshot({
 
   const plannedLine = mode.kind === 'day' ? buildPlannedLine(mode.dayId, tripPlaces, tripDayItems) : null;
   const routeSnapshots = mode.kind === 'day'
-    ? buildRouteSnapshots(mode.dayId, routeProfile, tripPlaces, tripDayItems, routePlans)
+    ? buildRouteSnapshots(mode.dayId, routeProfile, tripPlaces, tripDayItems, tripRoutePlans)
     : { routeGeometry: null, routeState: null };
 
   return {

@@ -26,7 +26,7 @@ import { MockRoutingProvider } from './src/services/mockRoutingProvider';
 type TabId = 'today' | 'days' | 'map' | 'notes';
 type MapDay = 'Без дня' | `День ${number}`;
 type MapFilter = 'Все' | MapDay;
-type TripDay = { id: DayId; label: Exclude<MapDay, 'Без дня'> };
+type TripDay = { id: DayId; label: Exclude<MapDay, 'Без дня'>; tripId: string };
 type TripStatus = 'plan' | 'history';
 
 type TripSummary = {
@@ -42,6 +42,7 @@ type TripNote = {
   body: string;
   id: string;
   title: string;
+  tripId: string;
   updatedAt: string;
 };
 
@@ -105,15 +106,15 @@ const tripDayDragStep = 142;
 const swipeActionThreshold = 54;
 const swipePreviewLimit = 92;
 const defaultTripDays: TripDay[] = [
-  { id: 'day-1', label: 'День 1' },
-  { id: 'day-2', label: 'День 2' },
+  { id: 'day-1', label: 'День 1', tripId: TRIP_ID },
+  { id: 'day-2', label: 'День 2', tripId: TRIP_ID },
 ];
 const initialTrips: TripSummary[] = [
   {
     approximateDays: null,
     country: 'Грузия',
     dates: '3-11',
-    id: 'trip-georgia',
+    id: TRIP_ID,
     status: 'plan',
     title: 'Грузия',
   },
@@ -123,6 +124,7 @@ const defaultTripNotes: TripNote[] = [
     body: 'Экстренные службы: 112. Посольство/консульство: добавьте адрес и телефон перед поездкой. Адрес жилья, контакты хозяина, страховая и важные бронирования лучше держать здесь офлайн.',
     id: 'note-important-georgia',
     title: 'Важные контакты и адреса страны',
+    tripId: TRIP_ID,
     updatedAt: 'сегодня',
   },
 ];
@@ -880,34 +882,75 @@ export default function App() {
   const [routePlans, setRoutePlans] = useState<RoutePlan[]>([MOCK_DAY_1_ROUTE_PLAN]);
   const routingProvider = useMemo(() => new MockRoutingProvider(), []);
   const selectedTrip = selectedTripId ? trips.find((candidate) => candidate.id === selectedTripId) ?? null : null;
+  const selectedTripDays = useMemo(
+    () => selectedTrip ? days.filter((day) => day.tripId === selectedTrip.id) : [],
+    [days, selectedTrip],
+  );
+  const selectedTripNotes = useMemo(
+    () => selectedTrip ? notes.filter((note) => note.tripId === selectedTrip.id) : [],
+    [notes, selectedTrip],
+  );
+  const selectedTripPlaces = useMemo(
+    () => selectedTrip ? places.filter((place) => place.tripId === selectedTrip.id) : [],
+    [places, selectedTrip],
+  );
+  const selectedTripDayItems = useMemo(
+    () => selectedTrip ? dayItems.filter((item) => item.tripId === selectedTrip.id) : [],
+    [dayItems, selectedTrip],
+  );
+  const selectedTripRoutePlans = useMemo(
+    () => selectedTrip ? routePlans.filter((plan) => plan.tripId === selectedTrip.id) : [],
+    [routePlans, selectedTrip],
+  );
 
   const createTrip = (input: Omit<TripSummary, 'id' | 'status'>) => {
     const tripId = `trip-${Date.now()}`;
+    const nextTrip = {
+      ...input,
+      id: tripId,
+      status: 'plan' as const,
+    };
+
     setTrips((currentTrips) => [
-      {
-        ...input,
-        id: tripId,
-        status: 'plan',
-      },
+      nextTrip,
       ...currentTrips,
     ]);
+    setDays((currentDays) => [
+      ...currentDays,
+      ...buildInitialTripDays(tripId, input.approximateDays),
+    ]);
+    setNotes((currentNotes) => [
+      ...currentNotes,
+      buildImportantTripNote(tripId, input.country),
+    ]);
+    setSelectedTripId(tripId);
+    setActiveTab('map');
   };
 
   const deleteTrip = (tripId: string) => {
     setTrips((currentTrips) => currentTrips.filter((candidate) => candidate.id !== tripId));
+    setPlaces((currentPlaces) => currentPlaces.filter((place) => place.tripId !== tripId));
+    setDayItems((currentItems) => currentItems.filter((item) => item.tripId !== tripId));
+    setDays((currentDays) => currentDays.filter((day) => day.tripId !== tripId));
+    setNotes((currentNotes) => currentNotes.filter((note) => note.tripId !== tripId));
+    setRoutePlans((currentPlans) => currentPlans.filter((plan) => plan.tripId !== tripId));
     if (selectedTripId === tripId) {
       setSelectedTripId(null);
     }
   };
 
   const addNote = () => {
-    const nextNumber = notes.length + 1;
+    if (!selectedTrip) {
+      return;
+    }
+
     setNotes((currentNotes) => [
       ...currentNotes,
       {
         body: '',
         id: `note-${Date.now()}`,
-        title: `Новая заметка ${nextNumber}`,
+        title: `Новая заметка ${currentNotes.filter((note) => note.tripId === selectedTrip.id).length + 1}`,
+        tripId: selectedTrip.id,
         updatedAt: 'сейчас',
       },
     ]);
@@ -930,70 +973,105 @@ export default function App() {
   };
 
   const addDay = () => {
+    if (!selectedTrip) {
+      return;
+    }
+
     setDays((currentDays) => {
+      const currentTripDays = currentDays.filter((day) => day.tripId === selectedTrip.id);
       const nextNumber = Math.max(
         0,
-        ...currentDays.map((day) => Number(day.id.replace('day-', ''))).filter(Number.isFinite),
+        ...currentTripDays.map((day) => Number(day.id.replace('day-', ''))).filter(Number.isFinite),
       ) + 1;
       return [
         ...currentDays,
-        { id: `day-${nextNumber}`, label: `День ${nextNumber}` },
+        { id: `day-${nextNumber}`, label: `День ${nextNumber}`, tripId: selectedTrip.id },
       ];
     });
   };
 
   const deleteDay = (dayId: DayId) => {
-    if (days.length <= 1) {
+    if (!selectedTrip || selectedTripDays.length <= 1) {
       return;
     }
 
-    const remainingDays = days.filter((day) => day.id !== dayId);
-    const { idMap, normalizedDays } = normalizeTripDays(remainingDays);
+    const remainingDays = selectedTripDays.filter((day) => day.id !== dayId);
+    const { idMap, normalizedDays } = normalizeTripDays(remainingDays, selectedTrip.id);
+    const nextDayIds = normalizedDays.map((day) => day.id);
+    const nextDayItems = normalizeDayItemOrders(dayItems
+      .filter((item) => item.tripId !== selectedTrip.id || item.dayId !== dayId)
+      .map((item) => {
+        if (item.tripId !== selectedTrip.id) {
+          return item;
+        }
 
-    setDays(normalizedDays);
-    setDayItems((currentItems) => normalizeDayItemOrders(currentItems
-      .filter((item) => item.dayId !== dayId)
-      .map((item) => ({
-        ...item,
-        dayId: idMap.get(item.dayId) ?? item.dayId,
-      })), normalizedDays.map((day) => day.id)));
-    setRoutePlans((currentPlans) => currentPlans
-      .filter((plan) => plan.dayId !== dayId)
-      .map((plan) => ({
-        ...plan,
-        dayId: idMap.get(plan.dayId) ?? plan.dayId,
-      })));
+        return {
+          ...item,
+          dayId: idMap.get(item.dayId) ?? item.dayId,
+        };
+      }), nextDayIds, selectedTrip.id);
+
+    setDays((currentDays) => replaceTripDays(currentDays, selectedTrip.id, normalizedDays));
+    setDayItems(nextDayItems);
+    setRoutePlans((currentPlans) => rebuildRoutePlansForTripDays(
+      currentPlans,
+      routingProvider,
+      selectedTrip.id,
+      places,
+      nextDayItems,
+      nextDayIds,
+    ));
   };
 
   const reorderTripDay = (dayId: DayId, targetIndex: number) => {
-    const currentIndex = days.findIndex((day) => day.id === dayId);
-    const safeTargetIndex = clamp(Math.round(targetIndex), 0, days.length - 1);
+    if (!selectedTrip) {
+      return;
+    }
+
+    const currentIndex = selectedTripDays.findIndex((day) => day.id === dayId);
+    const safeTargetIndex = clamp(Math.round(targetIndex), 0, selectedTripDays.length - 1);
 
     if (currentIndex < 0 || currentIndex === safeTargetIndex) {
       return;
     }
 
-    const reorderedDays = [...days];
+    const reorderedDays = [...selectedTripDays];
     const [movedDay] = reorderedDays.splice(currentIndex, 1);
     reorderedDays.splice(safeTargetIndex, 0, movedDay);
-    const { idMap, normalizedDays } = normalizeTripDays(reorderedDays);
+    const { idMap, normalizedDays } = normalizeTripDays(reorderedDays, selectedTrip.id);
+    const nextDayIds = normalizedDays.map((day) => day.id);
+    const nextDayItems = normalizeDayItemOrders(dayItems.map((item) => {
+      if (item.tripId !== selectedTrip.id) {
+        return item;
+      }
 
-    setDays(normalizedDays);
-    setDayItems((currentItems) => normalizeDayItemOrders(currentItems.map((item) => ({
-      ...item,
-      dayId: idMap.get(item.dayId) ?? item.dayId,
-    })), normalizedDays.map((day) => day.id)));
-    setRoutePlans((currentPlans) => currentPlans.map((plan) => ({
-      ...plan,
-      dayId: idMap.get(plan.dayId) ?? plan.dayId,
-    })));
+      return {
+        ...item,
+        dayId: idMap.get(item.dayId) ?? item.dayId,
+      };
+    }), nextDayIds, selectedTrip.id);
+
+    setDays((currentDays) => replaceTripDays(currentDays, selectedTrip.id, normalizedDays));
+    setDayItems(nextDayItems);
+    setRoutePlans((currentPlans) => rebuildRoutePlansForTripDays(
+      currentPlans,
+      routingProvider,
+      selectedTrip.id,
+      places,
+      nextDayItems,
+      nextDayIds,
+    ));
   };
 
   const addPlace = (input: AddPlaceInput) => {
+    if (!selectedTrip) {
+      return;
+    }
+
     const placeId = `local-${Date.now()}`;
     const nextPlace: Place = {
       id: placeId,
-      tripId: TRIP_ID,
+      tripId: selectedTrip.id,
       title: input.title,
       address: input.address,
       note: null,
@@ -1006,18 +1084,20 @@ export default function App() {
     };
     const nextPlaces = [...places, nextPlace];
     let nextDayItems = dayItems;
-    const dayId = input.day === 'Без дня' ? null : dayIdForLabel(input.day, days);
+    const dayId = input.day === 'Без дня' ? null : dayIdForLabel(input.day, selectedTripDays);
 
     if (dayId) {
       const nextRouteOrder = Math.max(
         0,
-        ...dayItems.filter((item) => item.dayId === dayId).map((item) => item.routeOrder),
+        ...dayItems
+          .filter((item) => item.tripId === selectedTrip.id && item.dayId === dayId)
+          .map((item) => item.routeOrder),
       ) + 1;
       nextDayItems = [
         ...dayItems,
         {
           id: `day-item-${placeId}`,
-          tripId: TRIP_ID,
+          tripId: selectedTrip.id,
           dayId,
           placeId,
           routeOrder: nextRouteOrder,
@@ -1031,6 +1111,7 @@ export default function App() {
     if (dayId) {
       setRoutePlans((currentPlans) => replaceRoutePlan(currentPlans, buildMockRoutePlan(
         routingProvider,
+        selectedTrip.id,
         nextPlaces,
         nextDayItems,
         dayId,
@@ -1039,8 +1120,12 @@ export default function App() {
   };
 
   const reorderDayCard = (dayId: DayId, pointId: string, targetIndex: number) => {
+    if (!selectedTrip) {
+      return;
+    }
+
     const snapshot = buildMapViewSnapshot({
-      tripId: TRIP_ID,
+      tripId: selectedTrip.id,
       mode: { kind: 'day', dayId },
       places,
       dayItems,
@@ -1059,11 +1144,13 @@ export default function App() {
     const nextOrderedPointIds = [...orderedPointIds];
     const [movedPointId] = nextOrderedPointIds.splice(currentIndex, 1);
     nextOrderedPointIds.splice(safeTargetIndex, 0, movedPointId);
-    const nextDayItems = applyReorderedDayItems(dayItems, dayId, nextOrderedPointIds);
+    const nextTripDayItems = applyReorderedDayItems(selectedTripDayItems, dayId, nextOrderedPointIds);
+    const nextDayItems = mergeTripDayItems(dayItems, selectedTrip.id, nextTripDayItems);
 
     setDayItems(nextDayItems);
     setRoutePlans((currentPlans) => replaceRoutePlan(currentPlans, buildMockRoutePlan(
       routingProvider,
+      selectedTrip.id,
       places,
       nextDayItems,
       dayId,
@@ -1071,7 +1158,14 @@ export default function App() {
   };
 
   const movePlaceToDay = (placeId: string, targetDayId: DayId | null) => {
-    const currentDayItem = dayItems.find((item) => item.placeId === placeId) ?? null;
+    const place = places.find((candidate) => candidate.id === placeId) ?? null;
+
+    if (!place) {
+      return;
+    }
+
+    const tripId = place.tripId;
+    const currentDayItem = dayItems.find((item) => item.tripId === tripId && item.placeId === placeId) ?? null;
     const affectedDayIds = new Set<DayId>();
 
     if (currentDayItem) {
@@ -1081,18 +1175,20 @@ export default function App() {
       affectedDayIds.add(targetDayId);
     }
 
-    let nextDayItems = dayItems.filter((item) => item.placeId !== placeId);
+    let nextDayItems = dayItems.filter((item) => !(item.tripId === tripId && item.placeId === placeId));
 
     if (targetDayId) {
       const nextRouteOrder = Math.max(
         0,
-        ...nextDayItems.filter((item) => item.dayId === targetDayId).map((item) => item.routeOrder),
+        ...nextDayItems
+          .filter((item) => item.tripId === tripId && item.dayId === targetDayId)
+          .map((item) => item.routeOrder),
       ) + 1;
       nextDayItems = [
         ...nextDayItems,
         {
           id: `day-item-${placeId}-${targetDayId}`,
-          tripId: TRIP_ID,
+          tripId,
           dayId: targetDayId,
           placeId,
           routeOrder: nextRouteOrder,
@@ -1100,35 +1196,43 @@ export default function App() {
       ];
     }
 
-    const normalizedDayItems = normalizeDayItemOrders(nextDayItems, Array.from(affectedDayIds));
+    const normalizedDayItems = normalizeDayItemOrders(nextDayItems, Array.from(affectedDayIds), tripId);
 
     setDayItems(normalizedDayItems);
     setRoutePlans((currentPlans) => {
       const dayIds = Array.from(affectedDayIds);
-      const unaffectedPlans = currentPlans.filter((plan) => !affectedDayIds.has(plan.dayId));
+      const unaffectedPlans = currentPlans.filter((plan) => plan.tripId !== tripId || !affectedDayIds.has(plan.dayId));
 
       return dayIds.reduce((plans, dayId) => (
-        replaceRoutePlan(plans, buildMockRoutePlan(routingProvider, places, normalizedDayItems, dayId))
+        replaceRoutePlan(plans, buildMockRoutePlan(routingProvider, tripId, places, normalizedDayItems, dayId))
       ), unaffectedPlans);
     });
   };
 
   const deletePlace = (placeId: string) => {
+    const place = places.find((candidate) => candidate.id === placeId) ?? null;
+
+    if (!place) {
+      return;
+    }
+
+    const tripId = place.tripId;
     const affectedDayIds = Array.from(new Set(
-      dayItems.filter((item) => item.placeId === placeId).map((item) => item.dayId),
+      dayItems.filter((item) => item.tripId === tripId && item.placeId === placeId).map((item) => item.dayId),
     ));
     const nextPlaces = places.filter((place) => place.id !== placeId);
     const nextDayItems = normalizeDayItemOrders(
-      dayItems.filter((item) => item.placeId !== placeId),
+      dayItems.filter((item) => !(item.tripId === tripId && item.placeId === placeId)),
       affectedDayIds,
+      tripId,
     );
 
     setPlaces(nextPlaces);
     setDayItems(nextDayItems);
     setRoutePlans((currentPlans) => {
-      const unaffectedPlans = currentPlans.filter((plan) => !affectedDayIds.includes(plan.dayId));
+      const unaffectedPlans = currentPlans.filter((plan) => plan.tripId !== tripId || !affectedDayIds.includes(plan.dayId));
       return affectedDayIds.reduce((plans, dayId) => (
-        replaceRoutePlan(plans, buildMockRoutePlan(routingProvider, nextPlaces, nextDayItems, dayId))
+        replaceRoutePlan(plans, buildMockRoutePlan(routingProvider, tripId, nextPlaces, nextDayItems, dayId))
       ), unaffectedPlans);
     });
   };
@@ -1189,29 +1293,30 @@ export default function App() {
         {activeTab === 'today' && <TodayView />}
         {activeTab === 'days' && (
           <DaysView
-            days={days}
-            dayItems={dayItems}
+            days={selectedTripDays}
+            dayItems={selectedTripDayItems}
             onAddDay={addDay}
             onDeleteDay={deleteDay}
             onMoveDay={reorderTripDay}
-            places={places}
+            places={selectedTripPlaces}
           />
         )}
         {activeTab === 'map' && (
           <MapView
-            dayItems={dayItems}
-            days={days}
+            dayItems={selectedTripDayItems}
+            days={selectedTripDays}
             onAddPlace={addPlace}
             onDeletePlace={deletePlace}
             onMovePlaceToDay={movePlaceToDay}
             onMoveDayCard={reorderDayCard}
-            places={places}
-            routePlans={routePlans}
+            places={selectedTripPlaces}
+            routePlans={selectedTripRoutePlans}
+            tripId={selectedTrip.id}
           />
         )}
         {activeTab === 'notes' && (
           <NotesView
-            notes={notes}
+            notes={selectedTripNotes}
             onAddNote={addNote}
             onDeleteNote={deleteNote}
             onUpdateNote={updateNote}
@@ -1838,6 +1943,7 @@ function MapView({
   onMoveDayCard,
   places,
   routePlans,
+  tripId,
 }: {
   dayItems: DayItem[];
   days: TripDay[];
@@ -1847,6 +1953,7 @@ function MapView({
   onMoveDayCard: (dayId: DayId, pointId: string, targetIndex: number) => void;
   places: Place[];
   routePlans: RoutePlan[];
+  tripId: string;
 }) {
   const [selectedFilter, setSelectedFilter] = useState<MapFilter>('Все');
   const [addQuery, setAddQuery] = useState('');
@@ -1869,14 +1976,14 @@ function MapView({
   }, [addDay, mapFilters, pointDayOptions, selectedFilter]);
 
   const snapshot = useMemo(() => buildMapViewSnapshot({
-    tripId: TRIP_ID,
+    tripId,
     mode,
     places,
     dayItems,
     routePlans,
     routeProfile,
     onlineSearchAvailable: false,
-  }), [dayItems, mode, places, routePlans]);
+  }), [dayItems, mode, places, routePlans, tripId]);
   const visibleCards = snapshot.cards.filter((card) => card.kind === 'place');
   const selectedDayId = mode.kind === 'day' ? mode.dayId : null;
   const selectedMapPlace = selectedPlaceId ? places.find((place) => place.id === selectedPlaceId) ?? null : null;
@@ -1935,6 +2042,12 @@ function MapView({
     }
 
     const handleMapMessage = (event: MessageEvent) => {
+      const mapFrame = document.querySelector('iframe[title="Карта поездки"]') as HTMLIFrameElement | null;
+
+      if (mapFrame?.contentWindow && event.source !== mapFrame.contentWindow) {
+        return;
+      }
+
       const payload = event.data;
 
       if (!payload || payload.type !== 'trip-map-click') {
@@ -2116,6 +2229,7 @@ function MapView({
       >
         {Platform.OS === 'web' ? (
           createElement('iframe', {
+            sandbox: 'allow-scripts',
             srcDoc: webMapHtml,
             title: 'Карта поездки',
             style: {
@@ -2422,6 +2536,7 @@ function buildLeafletMapHtml(pins: MapPin[], routeGeometry: RouteGeometrySnapsho
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src https://unpkg.com 'unsafe-inline'; style-src https://unpkg.com 'unsafe-inline'; img-src https://*.tile.openstreetmap.org data:; connect-src https://*.tile.openstreetmap.org;">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     html, body, #map { height: 100%; margin: 0; width: 100%; }
@@ -2449,6 +2564,13 @@ function buildLeafletMapHtml(pins: MapPin[], routeGeometry: RouteGeometrySnapsho
     const points = ${encodedPoints};
     const routeLatlngs = ${encodedRoute};
     const fallbackCenter = [41.695, 44.802];
+    const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (char) => ({
+      '&': '&amp;',
+      '<': '&lt;',
+      '>': '&gt;',
+      '"': '&quot;',
+      "'": '&#39;'
+    }[char]));
     const map = L.map('map', { zoomControl: true }).setView(fallbackCenter, 15);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -2461,15 +2583,16 @@ function buildLeafletMapHtml(pins: MapPin[], routeGeometry: RouteGeometrySnapsho
       if (typeof point.lat !== 'number' || typeof point.lng !== 'number') return;
       const latlng = [point.lat, point.lng];
       latlngs.push(latlng);
+      const markerColor = point.markerColor === '#d92d20' ? '#d92d20' : '#5f6770';
       const icon = L.divIcon({
         className: '',
-        html: '<div class="trip-pin" style="background:' + point.markerColor + '">' + point.label + '</div>',
+        html: '<div class="trip-pin" style="background:' + markerColor + '">' + escapeHtml(point.label) + '</div>',
         iconAnchor: [15, 15],
         iconSize: [30, 30],
         popupAnchor: [0, -16]
       });
       const marker = L.marker(latlng, { icon })
-        .bindPopup('<strong>' + point.title + '</strong>')
+        .bindPopup('<strong>' + escapeHtml(point.title) + '</strong>')
         .addTo(map);
       marker.on('click', () => {
         window.parent.postMessage({
@@ -2612,7 +2735,41 @@ function dayLabelForId(dayId: DayId, days: TripDay[]) {
   return days.find((day) => day.id === dayId)?.label ?? `День ${dayId.replace('day-', '')}`;
 }
 
-function normalizeTripDays(days: TripDay[]) {
+function buildInitialTripDays(tripId: string, approximateDays: number | null) {
+  const dayCount = clamp(approximateDays ?? 1, 1, 30);
+
+  return Array.from({ length: dayCount }, (_, index) => ({
+    id: `day-${index + 1}` as DayId,
+    label: `День ${index + 1}` as Exclude<MapDay, 'Без дня'>,
+    tripId,
+  }));
+}
+
+function buildImportantTripNote(tripId: string, country: string): TripNote {
+  return {
+    body: `Экстренные службы, адрес жилья, контакты хозяина, страховая и важные бронирования для поездки в ${country.trim() || 'страну'} лучше держать здесь офлайн.`,
+    id: `note-important-${tripId}`,
+    title: 'Важные контакты и адреса страны',
+    tripId,
+    updatedAt: 'сейчас',
+  };
+}
+
+function replaceTripDays(allDays: TripDay[], tripId: string, nextTripDays: TripDay[]) {
+  return [
+    ...allDays.filter((day) => day.tripId !== tripId),
+    ...nextTripDays,
+  ];
+}
+
+function mergeTripDayItems(allDayItems: DayItem[], tripId: string, nextTripDayItems: DayItem[]) {
+  return [
+    ...allDayItems.filter((item) => item.tripId !== tripId),
+    ...nextTripDayItems,
+  ];
+}
+
+function normalizeTripDays(days: TripDay[], tripId: string) {
   const idMap = new Map<DayId, DayId>();
   const normalizedDays = days.map((day, index) => {
     const normalizedId: DayId = `day-${index + 1}`;
@@ -2620,19 +2777,20 @@ function normalizeTripDays(days: TripDay[]) {
     return {
       id: normalizedId,
       label: `День ${index + 1}` as Exclude<MapDay, 'Без дня'>,
+      tripId,
     };
   });
 
   return { idMap, normalizedDays };
 }
 
-function normalizeDayItemOrders(dayItems: DayItem[], dayIds: DayId[]) {
+function normalizeDayItemOrders(dayItems: DayItem[], dayIds: DayId[], tripId?: string) {
   const dayIdSet = new Set(dayIds);
   const nextOrderById = new Map<string, number>();
 
   dayIds.forEach((dayId) => {
     dayItems
-      .filter((item) => item.dayId === dayId)
+      .filter((item) => item.dayId === dayId && (!tripId || item.tripId === tripId))
       .sort((a, b) => {
         if (a.routeOrder !== b.routeOrder) {
           return a.routeOrder - b.routeOrder;
@@ -2645,7 +2803,7 @@ function normalizeDayItemOrders(dayItems: DayItem[], dayIds: DayId[]) {
   });
 
   return dayItems.map((item) => {
-    if (!dayIdSet.has(item.dayId)) {
+    if (!dayIdSet.has(item.dayId) || (tripId && item.tripId !== tripId)) {
       return item;
     }
 
@@ -2658,6 +2816,7 @@ function normalizeDayItemOrders(dayItems: DayItem[], dayIds: DayId[]) {
 
 function buildMockRoutePlan(
   routingProvider: MockRoutingProvider,
+  tripId: string,
   places: Place[],
   dayItems: DayItem[],
   dayId: DayId,
@@ -2669,6 +2828,7 @@ function buildMockRoutePlan(
   }
 
   return {
+    tripId,
     dayId,
     profile: routeProfile,
     inputHash: buildRouteInputHash(dayId, routeProfile, waypoints),
@@ -2679,13 +2839,32 @@ function buildMockRoutePlan(
   };
 }
 
+function rebuildRoutePlansForTripDays(
+  currentPlans: RoutePlan[],
+  routingProvider: MockRoutingProvider,
+  tripId: string,
+  places: Place[],
+  dayItems: DayItem[],
+  dayIds: DayId[],
+) {
+  const nextPlans = currentPlans.filter((plan) => plan.tripId !== tripId);
+
+  return dayIds.reduce((plans, dayId) => (
+    replaceRoutePlan(plans, buildMockRoutePlan(routingProvider, tripId, places, dayItems, dayId))
+  ), nextPlans);
+}
+
 function replaceRoutePlan(routePlans: RoutePlan[], nextPlan: RoutePlan | null) {
   if (!nextPlan) {
     return routePlans;
   }
 
   return [
-    ...routePlans.filter((plan) => plan.dayId !== nextPlan.dayId || plan.profile !== nextPlan.profile),
+    ...routePlans.filter((plan) => (
+      plan.tripId !== nextPlan.tripId ||
+      plan.dayId !== nextPlan.dayId ||
+      plan.profile !== nextPlan.profile
+    )),
     nextPlan,
   ];
 }

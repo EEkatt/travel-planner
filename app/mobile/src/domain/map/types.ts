@@ -129,6 +129,7 @@ export type RouteGeometry = {
 };
 
 export type RoutePlan = {
+  tripId: string;
   dayId: DayId;
   profile: RouteProfile;
   inputHash: string;

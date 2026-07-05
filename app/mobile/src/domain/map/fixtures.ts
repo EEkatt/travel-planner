@@ -203,6 +203,7 @@ export const MOCK_DAY_1_ROUTE_GEOMETRY: RouteGeometry = {
 };
 
 export const MOCK_DAY_1_ROUTE_PLAN: RoutePlan = {
+  tripId: TRIP_ID,
   dayId: 'day-1',
   profile: 'walking',
   inputHash: buildRouteInputHash(

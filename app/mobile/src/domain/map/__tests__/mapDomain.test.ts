@@ -506,6 +506,22 @@ test('stale route is detected after order changes', () => {
   assertEqual(snapshot.routeGeometry, null, 'stale route geometry is not rendered');
 });
 
+test('route plans are isolated by trip id', () => {
+  const places = pickPlaces(['pt-day1-narikala', 'pt-day1-liberty', 'pt-day1-baths']);
+  const dayItems = dayItemsFor(['pt-day1-narikala', 'pt-day1-liberty', 'pt-day1-baths']);
+  const snapshot = buildMapViewSnapshot({
+    tripId: TRIP_ID,
+    mode: { kind: 'day', dayId: 'day-1' },
+    places,
+    dayItems,
+    routePlans: [{ ...MOCK_DAY_1_ROUTE_PLAN, tripId: 'another-trip' }],
+  });
+
+  assertEqual(snapshot.routeState?.status, 'idle', 'route plan from another trip is ignored');
+  assertEqual(snapshot.routeState?.planInputHash, null, 'foreign route plan hash is not exposed');
+  assertEqual(snapshot.routeGeometry, null, 'foreign route geometry is not rendered');
+});
+
 test('mock route geometry is not equal to direct waypoint list and is road-snapped', () => {
   const waypoints = buildRouteWaypointsFromDayItems(
     pickPlaces(['pt-day1-narikala', 'pt-day1-liberty', 'pt-day1-baths']),
@@ -543,6 +559,7 @@ test('direct plannedLine is not accepted as successful route geometry', () => {
     places,
     dayItems,
     routePlans: [{
+      tripId: TRIP_ID,
       dayId: 'day-1',
       profile: 'walking',
       inputHash,
