@@ -1513,27 +1513,86 @@ function MapView({
         <Text style={styles.sectionTitle}>Карта поездки</Text>
       </View>
 
-      <View style={styles.mapToolbar}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterCarousel}
-          contentContainerStyle={styles.filterCarouselContent}
-        >
-          {mapFilters.map((filter) => {
-            const isActive = selectedFilter === filter;
+      <View style={styles.addPointPanel}>
+        <Text style={styles.addPointTitle}>Поиск и добавление места</Text>
+        <TextInput
+          style={styles.textInput}
+          onChangeText={updateAddQuery}
+          placeholder="Искать место в Грузии"
+          placeholderTextColor="#8b9489"
+          value={addQuery}
+        />
+        <View style={styles.dayPicker}>
+          {pointDayOptions.map((day) => {
+            const isActive = addDay === day;
 
             return (
               <TouchableOpacity
-                key={filter}
-                style={[styles.filterTab, isActive && styles.activeFilterTab]}
-                onPress={() => setSelectedFilter(filter)}
+                key={day}
+                style={[styles.dayPickerButton, isActive && styles.activeDayPickerButton]}
+                onPress={() => setAddDay(day)}
               >
-                <Text style={[styles.filterText, isActive && styles.activeFilterText]}>{filter}</Text>
+                <Text style={[styles.dayPickerText, isActive && styles.activeDayPickerText]}>{day}</Text>
               </TouchableOpacity>
             );
           })}
-        </ScrollView>
+        </View>
+
+        {shownSuggestions.length > 0 ? (
+          <View style={styles.suggestionSection}>
+            <View style={styles.suggestionList}>
+              {shownSuggestions.map((suggestion) => {
+                const isSelected = selectedSuggestionId === suggestion.id;
+
+                return (
+                  <TouchableOpacity
+                    key={suggestion.id}
+                    style={[styles.suggestionCard, isSelected && styles.activeSuggestionCard]}
+                    onPress={() => selectSuggestion(suggestion)}
+                  >
+                    <View style={styles.placeText}>
+                      <Text style={styles.placeTitle}>{suggestion.title}</Text>
+                      <Text style={styles.placeMeta}>{suggestion.address}</Text>
+                    </View>
+                    <Text style={[styles.suggestionCountry, isSelected && styles.activeSuggestionCountry]}>
+                      GE
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+        ) : null}
+
+        <View style={styles.coordinateBox}>
+          <Text style={styles.coordinateText}>
+            {draftCoordinates
+              ? `${draftCoordinates.latitude.toFixed(5)}, ${draftCoordinates.longitude.toFixed(5)}`
+              : selectedSuggestion
+                ? `${selectedSuggestion.latitude.toFixed(5)}, ${selectedSuggestion.longitude.toFixed(5)}`
+                : 'Тап по карте добавит координаты; без координат место сохранится только в списке'}
+          </Text>
+          {draftCoordinates && !draftCoordinateInsideGeorgia ? (
+            <Text style={styles.errorText}>Эта точка вне MVP-карты Грузии. Сохраним как текстовую заметку без пина.</Text>
+          ) : null}
+        </View>
+
+        <View style={styles.addPlaceActions}>
+          {draftCoordinates ? (
+            <TouchableOpacity style={styles.secondaryOutlineButton} onPress={() => setDraftCoordinates(null)}>
+              <Text style={styles.secondaryOutlineButtonText}>Очистить координаты</Text>
+            </TouchableOpacity>
+          ) : null}
+          <TouchableOpacity
+            style={[styles.savePointButton, !canSaveAddPlace && styles.disabledButton]}
+            disabled={!canSaveAddPlace}
+            onPress={saveAddPlace}
+          >
+            <Text style={styles.savePointButtonText}>
+              {selectedSuggestion || (draftCoordinates && draftCoordinateInsideGeorgia) ? 'Сохранить место' : 'Сохранить текстом'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View
@@ -1627,86 +1686,27 @@ function MapView({
         ) : null}
       </View>
 
-      <View style={styles.addPointPanel}>
-        <Text style={styles.addPointTitle}>Поиск и добавление места</Text>
-        <TextInput
-          style={styles.textInput}
-          onChangeText={updateAddQuery}
-          placeholder="Искать место в Грузии"
-          placeholderTextColor="#8b9489"
-          value={addQuery}
-        />
-        <View style={styles.dayPicker}>
-          {pointDayOptions.map((day) => {
-            const isActive = addDay === day;
+      <View style={styles.mapToolbar}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterCarousel}
+          contentContainerStyle={styles.filterCarouselContent}
+        >
+          {mapFilters.map((filter) => {
+            const isActive = selectedFilter === filter;
 
             return (
               <TouchableOpacity
-                key={day}
-                style={[styles.dayPickerButton, isActive && styles.activeDayPickerButton]}
-                onPress={() => setAddDay(day)}
+                key={filter}
+                style={[styles.filterTab, isActive && styles.activeFilterTab]}
+                onPress={() => setSelectedFilter(filter)}
               >
-                <Text style={[styles.dayPickerText, isActive && styles.activeDayPickerText]}>{day}</Text>
+                <Text style={[styles.filterText, isActive && styles.activeFilterText]}>{filter}</Text>
               </TouchableOpacity>
             );
           })}
-        </View>
-
-        {shownSuggestions.length > 0 ? (
-          <View style={styles.suggestionSection}>
-            <View style={styles.suggestionList}>
-              {shownSuggestions.map((suggestion) => {
-                const isSelected = selectedSuggestionId === suggestion.id;
-
-                return (
-                  <TouchableOpacity
-                    key={suggestion.id}
-                    style={[styles.suggestionCard, isSelected && styles.activeSuggestionCard]}
-                    onPress={() => selectSuggestion(suggestion)}
-                  >
-                    <View style={styles.placeText}>
-                      <Text style={styles.placeTitle}>{suggestion.title}</Text>
-                      <Text style={styles.placeMeta}>{suggestion.address}</Text>
-                    </View>
-                    <Text style={[styles.suggestionCountry, isSelected && styles.activeSuggestionCountry]}>
-                      GE
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        ) : null}
-
-        <View style={styles.coordinateBox}>
-          <Text style={styles.coordinateText}>
-            {draftCoordinates
-              ? `${draftCoordinates.latitude.toFixed(5)}, ${draftCoordinates.longitude.toFixed(5)}`
-              : selectedSuggestion
-                ? `${selectedSuggestion.latitude.toFixed(5)}, ${selectedSuggestion.longitude.toFixed(5)}`
-                : 'Тап по карте добавит координаты; без координат место сохранится только в списке'}
-          </Text>
-          {draftCoordinates && !draftCoordinateInsideGeorgia ? (
-            <Text style={styles.errorText}>Эта точка вне MVP-карты Грузии. Сохраним как текстовую заметку без пина.</Text>
-          ) : null}
-        </View>
-
-        <View style={styles.addPlaceActions}>
-          {draftCoordinates ? (
-            <TouchableOpacity style={styles.secondaryOutlineButton} onPress={() => setDraftCoordinates(null)}>
-              <Text style={styles.secondaryOutlineButtonText}>Очистить координаты</Text>
-            </TouchableOpacity>
-          ) : null}
-          <TouchableOpacity
-            style={[styles.savePointButton, !canSaveAddPlace && styles.disabledButton]}
-            disabled={!canSaveAddPlace}
-            onPress={saveAddPlace}
-          >
-            <Text style={styles.savePointButtonText}>
-              {selectedSuggestion || (draftCoordinates && draftCoordinateInsideGeorgia) ? 'Сохранить место' : 'Сохранить текстом'}
-            </Text>
-          </TouchableOpacity>
-        </View>
+        </ScrollView>
       </View>
 
       <View style={styles.sectionHeader}>
