@@ -551,14 +551,26 @@ export default function App() {
   };
 
   const deleteDay = (dayId: DayId) => {
-    setDays((currentDays) => {
-      if (currentDays.length <= 1) {
-        return currentDays;
-      }
-      return currentDays.filter((day) => day.id !== dayId);
-    });
-    setDayItems((currentItems) => currentItems.filter((item) => item.dayId !== dayId));
-    setRoutePlans((currentPlans) => currentPlans.filter((plan) => plan.dayId !== dayId));
+    if (days.length <= 1) {
+      return;
+    }
+
+    const remainingDays = days.filter((day) => day.id !== dayId);
+    const { idMap, normalizedDays } = normalizeTripDays(remainingDays);
+
+    setDays(normalizedDays);
+    setDayItems((currentItems) => currentItems
+      .filter((item) => item.dayId !== dayId)
+      .map((item) => ({
+        ...item,
+        dayId: idMap.get(item.dayId) ?? item.dayId,
+      })));
+    setRoutePlans((currentPlans) => currentPlans
+      .filter((plan) => plan.dayId !== dayId)
+      .map((plan) => ({
+        ...plan,
+        dayId: idMap.get(plan.dayId) ?? plan.dayId,
+      })));
   };
 
   const refreshMockRoute = (dayId: DayId, nextPlaces = places, nextDayItems = dayItems) => {
@@ -1547,6 +1559,20 @@ function dayLabelForId(dayId: DayId, days: TripDay[]) {
   return days.find((day) => day.id === dayId)?.label ?? `День ${dayId.replace('day-', '')}`;
 }
 
+function normalizeTripDays(days: TripDay[]) {
+  const idMap = new Map<DayId, DayId>();
+  const normalizedDays = days.map((day, index) => {
+    const normalizedId: DayId = `day-${index + 1}`;
+    idMap.set(day.id, normalizedId);
+    return {
+      id: normalizedId,
+      label: `День ${index + 1}` as Exclude<MapDay, 'Без дня'>,
+    };
+  });
+
+  return { idMap, normalizedDays };
+}
+
 function buildMockRoutePlan(
   routingProvider: MockRoutingProvider,
   places: Place[],
@@ -1836,9 +1862,11 @@ const styles = StyleSheet.create({
   filterTab: {
     alignItems: 'center',
     borderRadius: 6,
-    minWidth: 92,
+    justifyContent: 'center',
+    minHeight: 44,
+    width: 176,
     paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingVertical: 11,
   },
   activeFilterTab: {
     backgroundColor: '#ffffff',
