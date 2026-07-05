@@ -27,6 +27,16 @@ type TabId = 'today' | 'days' | 'map';
 type MapDay = 'Без дня' | `День ${number}`;
 type MapFilter = 'Все' | MapDay;
 type TripDay = { id: DayId; label: Exclude<MapDay, 'Без дня'> };
+type TripStatus = 'plan' | 'history';
+
+type TripSummary = {
+  approximateDays: number | null;
+  country: string;
+  dates: string | null;
+  id: string;
+  status: TripStatus;
+  title: string;
+};
 
 type PlaceSuggestion = {
   address: string;
@@ -51,9 +61,7 @@ type PlaceDetails = {
   imageUrl: string;
 };
 
-const trip = {
-  title: 'Пробная поездка',
-  dates: '12-19 мая',
+const tripDetails = {
   nextItem: {
     time: '10:30',
     title: 'Прогулка по старому городу',
@@ -91,6 +99,16 @@ const swipePreviewLimit = 92;
 const defaultTripDays: TripDay[] = [
   { id: 'day-1', label: 'День 1' },
   { id: 'day-2', label: 'День 2' },
+];
+const initialTrips: TripSummary[] = [
+  {
+    approximateDays: null,
+    country: 'Грузия',
+    dates: '3-11',
+    id: 'trip-georgia',
+    status: 'plan',
+    title: 'Грузия',
+  },
 ];
 
 const georgiaCitySuggestions: PlaceSuggestion[] = [
@@ -837,11 +855,33 @@ const placeDetailsByKey: Record<string, PlaceDetails> = {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('map');
+  const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  const [trips, setTrips] = useState<TripSummary[]>(initialTrips);
   const [places, setPlaces] = useState<Place[]>(SHARED_PLACES);
   const [dayItems, setDayItems] = useState<DayItem[]>(SHARED_DAY_ITEMS);
   const [days, setDays] = useState<TripDay[]>(defaultTripDays);
   const [routePlans, setRoutePlans] = useState<RoutePlan[]>([MOCK_DAY_1_ROUTE_PLAN]);
   const routingProvider = useMemo(() => new MockRoutingProvider(), []);
+  const selectedTrip = selectedTripId ? trips.find((candidate) => candidate.id === selectedTripId) ?? null : null;
+
+  const createTrip = (input: Omit<TripSummary, 'id' | 'status'>) => {
+    const tripId = `trip-${Date.now()}`;
+    setTrips((currentTrips) => [
+      {
+        ...input,
+        id: tripId,
+        status: 'plan',
+      },
+      ...currentTrips,
+    ]);
+  };
+
+  const deleteTrip = (tripId: string) => {
+    setTrips((currentTrips) => currentTrips.filter((candidate) => candidate.id !== tripId));
+    if (selectedTripId === tripId) {
+      setSelectedTripId(null);
+    }
+  };
 
   const addDay = () => {
     setDays((currentDays) => {
@@ -1047,15 +1087,35 @@ export default function App() {
     });
   };
 
+  if (!selectedTrip) {
+    return (
+      <SafeAreaView style={styles.screen}>
+        <StatusBar style="auto" />
+        <ScrollView contentContainerStyle={styles.content}>
+          <TripsHomeView
+            onCreateTrip={createTrip}
+            onDeleteTrip={deleteTrip}
+            onOpenTrip={setSelectedTripId}
+            trips={trips}
+          />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar style="auto" />
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.header}>
           <View style={styles.headerText}>
-            <Text style={styles.tripLabel}>Текущая поездка</Text>
-            <Text style={styles.tripTitle}>{trip.title}</Text>
-            <Text style={styles.tripDates}>{trip.dates}</Text>
+            <TouchableOpacity onPress={() => setSelectedTripId(null)}>
+              <Text style={styles.sectionAction}>Мои поездки</Text>
+            </TouchableOpacity>
+            <Text style={styles.tripTitle}>{selectedTrip.title}</Text>
+            {selectedTrip.dates ? (
+              <Text style={styles.tripDates}>{selectedTrip.dates}</Text>
+            ) : null}
           </View>
           <View style={styles.modeBadge}>
             <Text style={styles.modeText}>Планирование</Text>
@@ -1113,9 +1173,9 @@ function TodayView() {
     <>
       <View style={styles.nextPanel}>
         <Text style={styles.sectionLabel}>Следующий пункт</Text>
-        <Text style={styles.nextTime}>{trip.nextItem.time}</Text>
-        <Text style={styles.nextTitle}>{trip.nextItem.title}</Text>
-        <Text style={styles.nextMeta}>{trip.nextItem.meta}</Text>
+        <Text style={styles.nextTime}>{tripDetails.nextItem.time}</Text>
+        <Text style={styles.nextTitle}>{tripDetails.nextItem.title}</Text>
+        <Text style={styles.nextMeta}>{tripDetails.nextItem.meta}</Text>
         <TouchableOpacity style={styles.primaryButton}>
           <Text style={styles.primaryButtonText}>Открыть во внешних картах</Text>
         </TouchableOpacity>
@@ -1151,16 +1211,241 @@ function TodayView() {
       <View style={styles.detailsRow}>
         <View style={styles.detailCard}>
           <Text style={styles.detailLabel}>Жилье</Text>
-          <Text style={styles.detailTitle}>{trip.housing.title}</Text>
-          <Text style={styles.detailMeta}>{trip.housing.meta}</Text>
+          <Text style={styles.detailTitle}>{tripDetails.housing.title}</Text>
+          <Text style={styles.detailMeta}>{tripDetails.housing.meta}</Text>
         </View>
         <View style={styles.detailCard}>
           <Text style={styles.detailLabel}>Рейс</Text>
-          <Text style={styles.detailTitle}>{trip.flight.title}</Text>
-          <Text style={styles.detailMeta}>{trip.flight.meta}</Text>
+          <Text style={styles.detailTitle}>{tripDetails.flight.title}</Text>
+          <Text style={styles.detailMeta}>{tripDetails.flight.meta}</Text>
         </View>
       </View>
     </>
+  );
+}
+
+function TripsHomeView({
+  onCreateTrip,
+  onDeleteTrip,
+  onOpenTrip,
+  trips,
+}: {
+  onCreateTrip: (input: Omit<TripSummary, 'id' | 'status'>) => void;
+  onDeleteTrip: (tripId: string) => void;
+  onOpenTrip: (tripId: string) => void;
+  trips: TripSummary[];
+}) {
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [draftTitle, setDraftTitle] = useState('');
+  const [draftCountry, setDraftCountry] = useState('');
+  const [draftDates, setDraftDates] = useState('');
+  const [draftDays, setDraftDays] = useState('');
+  const plannedTrips = trips.filter((trip) => trip.status === 'plan');
+  const historyTrips = trips.filter((trip) => trip.status === 'history');
+  const canCreateTrip = draftCountry.trim().length > 0;
+
+  const saveTrip = () => {
+    if (!canCreateTrip) {
+      return;
+    }
+
+    const country = draftCountry.trim();
+    const title = draftTitle.trim() || country;
+    const days = Number(draftDays.trim());
+
+    onCreateTrip({
+      approximateDays: Number.isFinite(days) && days > 0 ? days : null,
+      country,
+      dates: draftDates.trim() || null,
+      title,
+    });
+    setDraftTitle('');
+    setDraftCountry('');
+    setDraftDates('');
+    setDraftDays('');
+    setIsCreateOpen(false);
+  };
+
+  return (
+    <>
+      <View style={styles.homeHeader}>
+        <View>
+          <Text style={styles.tripLabel}>Главный экран</Text>
+          <Text style={styles.tripTitle}>Мои поездки</Text>
+        </View>
+        <TouchableOpacity style={styles.homeCreateButton} onPress={() => setIsCreateOpen((value) => !value)}>
+          <Text style={styles.homeCreateButtonText}>{isCreateOpen ? 'Закрыть' : 'Создать'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {isCreateOpen ? (
+        <View style={styles.createTripPanel}>
+          <Text style={styles.addPointTitle}>Новая поездка</Text>
+          <TextInput
+            style={styles.textInput}
+            onChangeText={setDraftTitle}
+            placeholder="Название"
+            placeholderTextColor="#8b9489"
+            value={draftTitle}
+          />
+          <TextInput
+            style={styles.textInput}
+            onChangeText={setDraftCountry}
+            placeholder="Страна"
+            placeholderTextColor="#8b9489"
+            value={draftCountry}
+          />
+          <View style={styles.createTripRow}>
+            <TextInput
+              style={[styles.textInput, styles.createTripHalfInput]}
+              onChangeText={setDraftDates}
+              placeholder="Точные даты"
+              placeholderTextColor="#8b9489"
+              value={draftDates}
+            />
+            <TextInput
+              style={[styles.textInput, styles.createTripHalfInput]}
+              keyboardType="number-pad"
+              onChangeText={setDraftDays}
+              placeholder="Дней примерно"
+              placeholderTextColor="#8b9489"
+              value={draftDays}
+            />
+          </View>
+          <TouchableOpacity
+            style={[styles.savePointButton, !canCreateTrip && styles.disabledButton]}
+            disabled={!canCreateTrip}
+            onPress={saveTrip}
+          >
+            <Text style={styles.savePointButtonText}>Создать поездку</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+
+      <TripSection
+        emptyText="Пока нет будущих поездок"
+        onDeleteTrip={onDeleteTrip}
+        onOpenTrip={onOpenTrip}
+        title="Планы"
+        trips={plannedTrips}
+      />
+      <TripSection
+        emptyText="История появится после завершения поездок"
+        onDeleteTrip={onDeleteTrip}
+        onOpenTrip={onOpenTrip}
+        title="История"
+        trips={historyTrips}
+      />
+    </>
+  );
+}
+
+function TripSection({
+  emptyText,
+  onDeleteTrip,
+  onOpenTrip,
+  title,
+  trips,
+}: {
+  emptyText: string;
+  onDeleteTrip: (tripId: string) => void;
+  onOpenTrip: (tripId: string) => void;
+  title: string;
+  trips: TripSummary[];
+}) {
+  return (
+    <View style={styles.tripSection}>
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>{title}</Text>
+        <Text style={styles.sectionMeta}>{trips.length}</Text>
+      </View>
+      <View style={styles.tripCards}>
+        {trips.length > 0 ? (
+          trips.map((trip) => (
+            <TripSummaryCard
+              key={trip.id}
+              onDeleteTrip={onDeleteTrip}
+              onOpenTrip={onOpenTrip}
+              trip={trip}
+            />
+          ))
+        ) : (
+          <View style={styles.emptyTripCard}>
+            <Text style={styles.placeMeta}>{emptyText}</Text>
+          </View>
+        )}
+      </View>
+    </View>
+  );
+}
+
+function TripSummaryCard({
+  onDeleteTrip,
+  onOpenTrip,
+  trip,
+}: {
+  onDeleteTrip: (tripId: string) => void;
+  onOpenTrip: (tripId: string) => void;
+  trip: TripSummary;
+}) {
+  const [swipeOffsetX, setSwipeOffsetX] = useState(0);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const panResponder = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dx) > 8,
+    onPanResponderGrant: () => {
+      setSwipeOffsetX(0);
+    },
+    onPanResponderMove: (_, gestureState) => {
+      setSwipeOffsetX(clamp(gestureState.dx, -swipePreviewLimit, swipePreviewLimit));
+    },
+    onPanResponderRelease: (_, gestureState) => {
+      const isIntentionalSwipe = Math.abs(gestureState.dx) >= swipeActionThreshold;
+
+      if (isIntentionalSwipe) {
+        setIsActionsOpen((value) => !value);
+      } else {
+        setIsActionsOpen(false);
+      }
+      setSwipeOffsetX(0);
+    },
+    onPanResponderTerminate: () => {
+      setSwipeOffsetX(0);
+    },
+  }), []);
+
+  return (
+    <View>
+      <Pressable
+        style={[
+          styles.tripCard,
+          swipeOffsetX !== 0 && styles.draggingPlaceCard,
+          swipeOffsetX !== 0 && { transform: [{ translateX: swipeOffsetX }] },
+        ]}
+        onPress={() => onOpenTrip(trip.id)}
+        {...panResponder.panHandlers}
+      >
+        <View>
+          <Text style={styles.tripCardTitle}>{trip.title}</Text>
+          {trip.dates ? (
+            <Text style={styles.tripCardDates}>{trip.dates}</Text>
+          ) : null}
+        </View>
+        <Text style={styles.tripCardCountry}>{trip.country}</Text>
+      </Pressable>
+      {isActionsOpen ? (
+        <View style={styles.swipeActions}>
+          <TouchableOpacity
+            style={[styles.swipeActionButton, styles.swipeDeleteButton]}
+            onPress={() => {
+              onDeleteTrip(trip.id);
+              setIsActionsOpen(false);
+            }}
+          >
+            <Text style={styles.swipeDeleteButtonText}>Удалить</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -2228,6 +2513,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 14,
   },
+  homeHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 16,
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
   headerText: {
     flex: 1,
   },
@@ -2258,6 +2550,73 @@ const styles = StyleSheet.create({
     color: '#1f6b3a',
     fontSize: 13,
     fontWeight: '700',
+  },
+  homeCreateButton: {
+    alignItems: 'center',
+    backgroundColor: '#243126',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+  },
+  homeCreateButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  createTripPanel: {
+    backgroundColor: '#ffffff',
+    borderColor: '#dce3da',
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 10,
+    marginBottom: 18,
+    padding: 14,
+  },
+  createTripRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  createTripHalfInput: {
+    flex: 1,
+  },
+  tripSection: {
+    marginBottom: 18,
+  },
+  tripCards: {
+    gap: 10,
+  },
+  tripCard: {
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderColor: '#dce3da',
+    borderRadius: 8,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: 12,
+    justifyContent: 'space-between',
+    padding: 15,
+  },
+  tripCardTitle: {
+    color: '#1d261f',
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  tripCardDates: {
+    color: '#657063',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  tripCardCountry: {
+    color: '#2b7344',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  emptyTripCard: {
+    backgroundColor: '#ffffff',
+    borderColor: '#dce3da',
+    borderRadius: 8,
+    borderWidth: 1,
+    padding: 15,
   },
   tabs: {
     backgroundColor: '#e7ece5',
