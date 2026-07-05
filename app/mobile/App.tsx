@@ -865,12 +865,12 @@ export default function App() {
     const { idMap, normalizedDays } = normalizeTripDays(remainingDays);
 
     setDays(normalizedDays);
-    setDayItems((currentItems) => currentItems
+    setDayItems((currentItems) => normalizeDayItemOrders(currentItems
       .filter((item) => item.dayId !== dayId)
       .map((item) => ({
         ...item,
         dayId: idMap.get(item.dayId) ?? item.dayId,
-      })));
+      })), normalizedDays.map((day) => day.id)));
     setRoutePlans((currentPlans) => currentPlans
       .filter((plan) => plan.dayId !== dayId)
       .map((plan) => ({
@@ -893,10 +893,10 @@ export default function App() {
     const { idMap, normalizedDays } = normalizeTripDays(reorderedDays);
 
     setDays(normalizedDays);
-    setDayItems((currentItems) => currentItems.map((item) => ({
+    setDayItems((currentItems) => normalizeDayItemOrders(currentItems.map((item) => ({
       ...item,
       dayId: idMap.get(item.dayId) ?? item.dayId,
-    })));
+    })), normalizedDays.map((day) => day.id)));
     setRoutePlans((currentPlans) => currentPlans.map((plan) => ({
       ...plan,
       dayId: idMap.get(plan.dayId) ?? plan.dayId,
@@ -1014,13 +1014,15 @@ export default function App() {
       ];
     }
 
-    setDayItems(nextDayItems);
+    const normalizedDayItems = normalizeDayItemOrders(nextDayItems, Array.from(affectedDayIds));
+
+    setDayItems(normalizedDayItems);
     setRoutePlans((currentPlans) => {
       const dayIds = Array.from(affectedDayIds);
       const unaffectedPlans = currentPlans.filter((plan) => !affectedDayIds.has(plan.dayId));
 
       return dayIds.reduce((plans, dayId) => (
-        replaceRoutePlan(plans, buildMockRoutePlan(routingProvider, places, nextDayItems, dayId))
+        replaceRoutePlan(plans, buildMockRoutePlan(routingProvider, places, normalizedDayItems, dayId))
       ), unaffectedPlans);
     });
   };
@@ -1030,7 +1032,10 @@ export default function App() {
       dayItems.filter((item) => item.placeId === placeId).map((item) => item.dayId),
     ));
     const nextPlaces = places.filter((place) => place.id !== placeId);
-    const nextDayItems = dayItems.filter((item) => item.placeId !== placeId);
+    const nextDayItems = normalizeDayItemOrders(
+      dayItems.filter((item) => item.placeId !== placeId),
+      affectedDayIds,
+    );
 
     setPlaces(nextPlaces);
     setDayItems(nextDayItems);
@@ -1290,9 +1295,9 @@ function TripDayCard({
           </View>
           {items.length > 0 ? (
             <View style={styles.dayPlanList}>
-              {items.map(({ item, place }) => (
+              {items.map(({ item, place }, itemIndex) => (
                 <View key={item.id} style={styles.dayPlanRow}>
-                  <Text style={styles.dayPlanNumber}>{item.routeOrder}</Text>
+                  <Text style={styles.dayPlanNumber}>{itemIndex + 1}</Text>
                   <View style={styles.placeText}>
                     <Text style={styles.dayPlanTitle}>{place?.title ?? 'Место не найдено'}</Text>
                     <Text style={styles.dayPlanMeta}>
@@ -2120,6 +2125,36 @@ function normalizeTripDays(days: TripDay[]) {
   });
 
   return { idMap, normalizedDays };
+}
+
+function normalizeDayItemOrders(dayItems: DayItem[], dayIds: DayId[]) {
+  const dayIdSet = new Set(dayIds);
+  const nextOrderById = new Map<string, number>();
+
+  dayIds.forEach((dayId) => {
+    dayItems
+      .filter((item) => item.dayId === dayId)
+      .sort((a, b) => {
+        if (a.routeOrder !== b.routeOrder) {
+          return a.routeOrder - b.routeOrder;
+        }
+        return a.id.localeCompare(b.id);
+      })
+      .forEach((item, index) => {
+        nextOrderById.set(item.id, index + 1);
+      });
+  });
+
+  return dayItems.map((item) => {
+    if (!dayIdSet.has(item.dayId)) {
+      return item;
+    }
+
+    return {
+      ...item,
+      routeOrder: nextOrderById.get(item.id) ?? item.routeOrder,
+    };
+  });
 }
 
 function buildMockRoutePlan(
