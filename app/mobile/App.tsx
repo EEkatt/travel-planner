@@ -20,7 +20,6 @@ import {
   type RouteGeometrySnapshot,
   type RoutePlan,
   type RouteProfile,
-  type RouteStateSnapshot,
 } from './src/domain/map';
 import { MockRoutingProvider } from './src/services/mockRoutingProvider';
 
@@ -55,8 +54,6 @@ type PlaceDetails = {
 const trip = {
   title: 'Пробная поездка',
   dates: '12-19 мая',
-  offlineMapStatus: 'Офлайн-карта не подключена в прототипе',
-  savedDetailsStatus: 'Детали поездки сохранены на устройстве',
   nextItem: {
     time: '10:30',
     title: 'Прогулка по старому городу',
@@ -93,7 +90,7 @@ const defaultTripDays: TripDay[] = [
   { id: 'day-2', label: 'День 2' },
 ];
 
-const georgiaPlaceSuggestions: PlaceSuggestion[] = [
+const georgiaCitySuggestions: PlaceSuggestion[] = [
   {
     address: 'Грузия',
     countryCode: 'GE',
@@ -102,6 +99,218 @@ const georgiaPlaceSuggestions: PlaceSuggestion[] = [
     longitude: 44.8271,
     title: 'Тбилиси',
   },
+  {
+    address: 'Аджария, Грузия',
+    countryCode: 'GE',
+    id: 'ge-batumi',
+    latitude: 41.6168,
+    longitude: 41.6367,
+    title: 'Батуми',
+  },
+  {
+    address: 'Имеретия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-kutaisi-city',
+    latitude: 42.2679,
+    longitude: 42.6946,
+    title: 'Кутаиси',
+  },
+  {
+    address: 'Самцхе-Джавахети, Грузия',
+    countryCode: 'GE',
+    id: 'ge-borjomi-city',
+    latitude: 41.8412,
+    longitude: 43.3823,
+    title: 'Боржоми',
+  },
+  {
+    address: 'Кахетия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-telavi-city',
+    latitude: 41.9198,
+    longitude: 45.4732,
+    title: 'Телави',
+  },
+  {
+    address: 'Шида-Картли, Грузия',
+    countryCode: 'GE',
+    id: 'ge-gori-city',
+    latitude: 41.9854,
+    longitude: 44.1089,
+    title: 'Гори',
+  },
+  {
+    address: 'Самегрело, Грузия',
+    countryCode: 'GE',
+    id: 'ge-zugdidi-city',
+    latitude: 42.5088,
+    longitude: 41.8709,
+    title: 'Зугдиди',
+  },
+  {
+    address: 'Квемо-Картли, Грузия',
+    countryCode: 'GE',
+    id: 'ge-rustavi',
+    latitude: 41.5495,
+    longitude: 44.9932,
+    title: 'Рустави',
+  },
+  {
+    address: 'Самегрело, Грузия',
+    countryCode: 'GE',
+    id: 'ge-poti',
+    latitude: 42.1537,
+    longitude: 41.6716,
+    title: 'Поти',
+  },
+  {
+    address: 'Аджария, Грузия',
+    countryCode: 'GE',
+    id: 'ge-kobuleti',
+    latitude: 41.82,
+    longitude: 41.7753,
+    title: 'Кобулети',
+  },
+  {
+    address: 'Гурия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-ozurgeti',
+    latitude: 41.9244,
+    longitude: 42.0068,
+    title: 'Озургети',
+  },
+  {
+    address: 'Мцхета-Мтианети, Грузия',
+    countryCode: 'GE',
+    id: 'ge-mtskheta-city',
+    latitude: 41.8451,
+    longitude: 44.7188,
+    title: 'Мцхета',
+  },
+  {
+    address: 'Самцхе-Джавахети, Грузия',
+    countryCode: 'GE',
+    id: 'ge-akhaltsikhe-city',
+    latitude: 41.639,
+    longitude: 42.9826,
+    title: 'Ахалцихе',
+  },
+  {
+    address: 'Сванетия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-mestia-city',
+    latitude: 43.0453,
+    longitude: 42.7293,
+    title: 'Местия',
+  },
+  {
+    address: 'Казбеги, Грузия',
+    countryCode: 'GE',
+    id: 'ge-stepantsminda-city',
+    latitude: 42.6575,
+    longitude: 44.6414,
+    title: 'Степанцминда',
+  },
+  {
+    address: 'Самцхе-Джавахети, Грузия',
+    countryCode: 'GE',
+    id: 'ge-bakuriani-city',
+    latitude: 41.7509,
+    longitude: 43.5293,
+    title: 'Бакуриани',
+  },
+  {
+    address: 'Мцхета-Мтианети, Грузия',
+    countryCode: 'GE',
+    id: 'ge-gudauri-city',
+    latitude: 42.4775,
+    longitude: 44.4762,
+    title: 'Гудаури',
+  },
+  {
+    address: 'Рача, Грузия',
+    countryCode: 'GE',
+    id: 'ge-ambrolauri-city',
+    latitude: 42.5211,
+    longitude: 43.1622,
+    title: 'Амбролаури',
+  },
+  {
+    address: 'Кахетия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-sighnaghi-city',
+    latitude: 41.617,
+    longitude: 45.9218,
+    title: 'Сигнахи',
+  },
+  {
+    address: 'Имеретия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-tskaltubo',
+    latitude: 42.3286,
+    longitude: 42.601,
+    title: 'Цхалтубо',
+  },
+  {
+    address: 'Имеретия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-samtredia',
+    latitude: 42.1537,
+    longitude: 42.3352,
+    title: 'Самтредиа',
+  },
+  {
+    address: 'Имеретия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-zestafoni',
+    latitude: 42.1082,
+    longitude: 43.0525,
+    title: 'Зестафони',
+  },
+  {
+    address: 'Имеретия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-chiatura',
+    latitude: 42.2895,
+    longitude: 43.2812,
+    title: 'Чиатура',
+  },
+  {
+    address: 'Шида-Картли, Грузия',
+    countryCode: 'GE',
+    id: 'ge-khashuri',
+    latitude: 41.9941,
+    longitude: 43.5999,
+    title: 'Хашури',
+  },
+  {
+    address: 'Квемо-Картли, Грузия',
+    countryCode: 'GE',
+    id: 'ge-marneuli',
+    latitude: 41.4759,
+    longitude: 44.8089,
+    title: 'Марнеули',
+  },
+  {
+    address: 'Кахетия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-gurjaani',
+    latitude: 41.7429,
+    longitude: 45.8011,
+    title: 'Гурджаани',
+  },
+  {
+    address: 'Кахетия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-kvareli',
+    latitude: 41.9511,
+    longitude: 45.8172,
+    title: 'Кварели',
+  },
+];
+
+const georgiaPlaceSuggestions: PlaceSuggestion[] = [
+  ...georgiaCitySuggestions,
   {
     address: 'Тбилиси, Грузия',
     countryCode: 'GE',
@@ -667,15 +876,6 @@ export default function App() {
       })));
   };
 
-  const refreshMockRoute = (dayId: DayId, nextPlaces = places, nextDayItems = dayItems) => {
-    setRoutePlans((currentPlans) => replaceRoutePlan(currentPlans, buildMockRoutePlan(
-      routingProvider,
-      nextPlaces,
-      nextDayItems,
-      dayId,
-    )));
-  };
-
   const addPlace = (input: AddPlaceInput) => {
     const placeId = `local-${Date.now()}`;
     const nextPlace: Place = {
@@ -757,31 +957,6 @@ export default function App() {
     )));
   };
 
-  const assignPlaceToDay = (placeId: string, dayId: DayId) => {
-    const nextRouteOrder = Math.max(
-      0,
-      ...dayItems.filter((item) => item.dayId === dayId).map((item) => item.routeOrder),
-    ) + 1;
-    const nextDayItems = [
-      ...dayItems.filter((item) => item.placeId !== placeId),
-      {
-        id: `day-item-${placeId}-${dayId}`,
-        tripId: TRIP_ID,
-        dayId,
-        placeId,
-        routeOrder: nextRouteOrder,
-      },
-    ];
-
-    setDayItems(nextDayItems);
-    setRoutePlans((currentPlans) => replaceRoutePlan(currentPlans, buildMockRoutePlan(
-      routingProvider,
-      places,
-      nextDayItems,
-      dayId,
-    )));
-  };
-
   const deletePlace = (placeId: string) => {
     const affectedDayIds = Array.from(new Set(
       dayItems.filter((item) => item.placeId === placeId).map((item) => item.dayId),
@@ -812,11 +987,6 @@ export default function App() {
           <View style={styles.modeBadge}>
             <Text style={styles.modeText}>Планирование</Text>
           </View>
-        </View>
-
-        <View style={styles.statusPanel}>
-          <Text style={styles.statusTitle}>{trip.savedDetailsStatus}</Text>
-          <Text style={styles.statusText}>{trip.offlineMapStatus}. Списки и детали доступны в текущем состоянии экрана.</Text>
         </View>
 
         <View style={styles.tabs} accessibilityRole="tablist">
@@ -852,10 +1022,8 @@ export default function App() {
             dayItems={dayItems}
             days={days}
             onAddPlace={addPlace}
-            onAssignPlaceToDay={assignPlaceToDay}
             onDeletePlace={deletePlace}
             onMoveDayCard={reorderDayCard}
-            onRefreshRoute={refreshMockRoute}
             places={places}
             routePlans={routePlans}
           />
@@ -995,20 +1163,16 @@ function MapView({
   dayItems,
   days,
   onAddPlace,
-  onAssignPlaceToDay,
   onDeletePlace,
   onMoveDayCard,
-  onRefreshRoute,
   places,
   routePlans,
 }: {
   dayItems: DayItem[];
   days: TripDay[];
   onAddPlace: (place: AddPlaceInput) => void;
-  onAssignPlaceToDay: (placeId: string, dayId: DayId) => void;
   onDeletePlace: (placeId: string) => void;
   onMoveDayCard: (dayId: DayId, pointId: string, targetIndex: number) => void;
-  onRefreshRoute: (dayId: DayId) => void;
   places: Place[];
   routePlans: RoutePlan[];
 }) {
@@ -1041,12 +1205,10 @@ function MapView({
     routeProfile,
     onlineSearchAvailable: false,
   }), [dayItems, mode, places, routePlans]);
-  const hiddenCards = snapshot.cards.filter((card) => card.kind === 'missing_target');
   const visibleCards = snapshot.cards.filter((card) => card.kind === 'place');
   const selectedDayId = mode.kind === 'day' ? mode.dayId : null;
   const selectedMapPlace = selectedPlaceId ? places.find((place) => place.id === selectedPlaceId) ?? null : null;
   const selectedMapPlaceDetails = selectedMapPlace ? getPlaceDetails(selectedMapPlace) : null;
-  const routeStatusCopy = getRouteStatusCopy(snapshot.routeState, snapshot.routeGeometry);
   const routePreviewSegments = useMemo(
     () => buildRoutePreviewSegments(snapshot.routeGeometry?.coordinates ?? []),
     [snapshot.routeGeometry],
@@ -1061,6 +1223,8 @@ function MapView({
       return [];
     }
 
+    const seenTitles = new Set<string>();
+
     return georgiaPlaceSuggestions
       .map((suggestion) => ({
         score: getSuggestionScore(suggestion, normalizedQuery),
@@ -1068,6 +1232,15 @@ function MapView({
       }))
       .filter((rankedSuggestion) => rankedSuggestion.score < Number.MAX_SAFE_INTEGER)
       .sort((a, b) => a.score - b.score || a.suggestion.title.localeCompare(b.suggestion.title, 'ru-RU'))
+      .filter(({ suggestion }) => {
+        const titleKey = normalizeSuggestionText(suggestion.title);
+
+        if (seenTitles.has(titleKey)) {
+          return false;
+        }
+        seenTitles.add(titleKey);
+        return true;
+      })
       .slice(0, 5)
       .map((rankedSuggestion) => rankedSuggestion.suggestion);
   }, [normalizedQuery]);
@@ -1175,24 +1348,7 @@ function MapView({
   return (
     <>
       <View style={styles.mapHeader}>
-        <View>
-          <Text style={styles.sectionTitle}>Карта поездки</Text>
-          <Text style={styles.mapSubtitle}>{snapshot.pins.length} точки показаны, {hiddenCards.length} нужно уточнить</Text>
-        </View>
-        <TouchableOpacity style={styles.secondaryButton}>
-          <Text style={styles.secondaryButtonText}>Прототип</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.mapModeGrid}>
-        <View style={styles.mapModeCard}>
-          <Text style={styles.mapModeTitle}>Поиск</Text>
-          <Text style={styles.mapModeText}>Сейчас работает локальная база мест Грузии, добавление точек и текстовых мест.</Text>
-        </View>
-        <View style={styles.mapModeCard}>
-          <Text style={styles.mapModeTitle}>Маршрут</Text>
-          <Text style={styles.mapModeText}>{routeStatusCopy}</Text>
-        </View>
+        <Text style={styles.sectionTitle}>Карта поездки</Text>
       </View>
 
       <View style={styles.mapToolbar}>
@@ -1311,9 +1467,6 @@ function MapView({
 
       <View style={styles.addPointPanel}>
         <Text style={styles.addPointTitle}>Поиск и добавление места</Text>
-        <Text style={styles.addPointHint}>
-          Сейчас подсказки идут из локальной базы Грузии. Полный онлайн-поиск подключается через провайдера карт.
-        </Text>
         <TextInput
           style={styles.textInput}
           onChangeText={updateAddQuery}
@@ -1394,31 +1547,6 @@ function MapView({
         </View>
       </View>
 
-      <View style={styles.mapNotice}>
-        <Text style={styles.mapNoticeTitle}>Сейчас это прототип карты</Text>
-        <Text style={styles.mapNoticeText}>
-          Подсказки пока берутся из локальной базы Грузии. Для полного поиска, русской карты и реального дорожного маршрута нужен картографический провайдер.
-        </Text>
-      </View>
-
-      {selectedDayId && (
-        <View style={styles.routeStatusPanel}>
-          <View style={styles.routeStatusHeader}>
-            <View>
-              <Text style={styles.routeStatusTitle}>{dayLabelForId(selectedDayId, days)}: {routeStatusCopy}</Text>
-              <Text style={styles.routeStatusText}>
-                {snapshot.routeGeometry
-                  ? 'Показана mock route для прототипа, не ETA и не traffic.'
-                  : 'Линия маршрута не рисуется как success без route geometry.'}
-              </Text>
-            </View>
-            <TouchableOpacity style={styles.secondaryOutlineButton} onPress={() => onRefreshRoute(selectedDayId)}>
-              <Text style={styles.secondaryOutlineButtonText}>Обновить mock route</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-
       <View style={styles.sectionHeader}>
         <Text style={styles.sectionTitle}>{selectedDayId ? 'Порядок дня' : 'Точки на карте'}</Text>
         <Text style={styles.sectionMeta}>{visibleCards.length}</Text>
@@ -1431,7 +1559,6 @@ function MapView({
             index={index}
             itemCount={snapshot.cards.length}
             mode={mode}
-            onAssignPlaceToDay={onAssignPlaceToDay}
             onMoveDayCard={onMoveDayCard}
             place={places.find((candidate) => candidate.id === card.pointId) ?? null}
             tripDays={days}
@@ -1442,7 +1569,7 @@ function MapView({
       {snapshot.emptyState && (
         <View style={styles.mapNotice}>
           <Text style={styles.mapNoticeTitle}>Пока пусто</Text>
-          <Text style={styles.mapNoticeText}>Добавьте место через локальный mock-поиск или текстом.</Text>
+          <Text style={styles.mapNoticeText}>Добавьте место через поиск или текстом.</Text>
         </View>
       )}
     </>
@@ -1454,7 +1581,6 @@ function MapPlaceCard({
   index,
   itemCount,
   mode,
-  onAssignPlaceToDay,
   onMoveDayCard,
   place,
   tripDays,
@@ -1463,7 +1589,6 @@ function MapPlaceCard({
   index: number;
   itemCount: number;
   mode: MapMode;
-  onAssignPlaceToDay: (placeId: string, dayId: DayId) => void;
   onMoveDayCard: (dayId: DayId, pointId: string, targetIndex: number) => void;
   place: Place | null;
   tripDays: TripDay[];
@@ -1516,15 +1641,6 @@ function MapPlaceCard({
           {dayCopy} - {coordinatesCopy}{dayId ? ' - потяните карточку для изменения порядка' : ''}
         </Text>
       </View>
-      {!card.dayId && tripDays.length > 0 ? (
-        <View style={styles.assignDayActions}>
-          {tripDays.map((day) => (
-            <TouchableOpacity key={day.id} style={styles.assignDayButton} onPress={() => onAssignPlaceToDay(card.pointId, day.id)}>
-              <Text style={styles.assignDayButtonText}>В {day.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      ) : null}
     </View>
   );
 }
@@ -1788,26 +1904,6 @@ function replaceRoutePlan(routePlans: RoutePlan[], nextPlan: RoutePlan | null) {
   ];
 }
 
-function getRouteStatusCopy(
-  routeState: RouteStateSnapshot | null,
-  routeGeometry: RouteGeometrySnapshot | null,
-) {
-  if (!routeState) {
-    return 'В режиме Все route line не показывается';
-  }
-  if (routeState.failureReason === 'insufficient_waypoints') {
-    return 'недостаточно точек';
-  }
-  if (routeState.status === 'ready' && routeGeometry?.source === 'routing_provider_mock') {
-    return 'маршрут рассчитан - mock route для прототипа';
-  }
-  if (routeState.status === 'ready') {
-    return 'маршрут рассчитан';
-  }
-
-  return 'маршрут нужно обновить онлайн';
-}
-
 function buildRoutePreviewSegments(coordinates: Coordinates[]) {
   return coordinates.slice(1).map((coordinate, index) => {
     const previous = coordinateToPreviewPositionNumbers(
@@ -1876,25 +1972,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
   },
-  statusPanel: {
-    backgroundColor: '#ffffff',
-    borderColor: '#dce3da',
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 14,
-    padding: 14,
-  },
-  statusTitle: {
-    color: '#1d261f',
-    fontSize: 15,
-    fontWeight: '800',
-  },
-  statusText: {
-    color: '#657063',
-    fontSize: 14,
-    lineHeight: 20,
-    marginTop: 5,
-  },
   tabs: {
     backgroundColor: '#e7ece5',
     borderRadius: 8,
@@ -1962,18 +2039,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
   },
-  secondaryButton: {
-    alignItems: 'center',
-    backgroundColor: '#243126',
-    borderRadius: 7,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-  },
-  secondaryButtonText: {
-    color: '#ffffff',
-    fontSize: 14,
-    fontWeight: '800',
-  },
   quickGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -2001,30 +2066,6 @@ const styles = StyleSheet.create({
     gap: 12,
     justifyContent: 'space-between',
     marginBottom: 10,
-  },
-  mapModeGrid: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 12,
-  },
-  mapModeCard: {
-    backgroundColor: '#ffffff',
-    borderColor: '#dce3da',
-    borderRadius: 8,
-    borderWidth: 1,
-    flex: 1,
-    padding: 12,
-  },
-  mapModeTitle: {
-    color: '#1d261f',
-    fontSize: 14,
-    fontWeight: '800',
-  },
-  mapModeText: {
-    color: '#657063',
-    fontSize: 12,
-    lineHeight: 17,
-    marginTop: 4,
   },
   mapToolbar: {
     gap: 10,
@@ -2230,34 +2271,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     marginTop: 5,
   },
-  routeStatusPanel: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#bfdbfe',
-    borderRadius: 8,
-    borderWidth: 1,
-    marginBottom: 16,
-    padding: 14,
-  },
-  routeStatusHeader: {
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  routeStatusTitle: {
-    color: '#1e3a8a',
-    fontSize: 15,
-    fontWeight: '900',
-  },
-  routeStatusText: {
-    color: '#334155',
-    fontSize: 13,
-    lineHeight: 18,
-    marginTop: 4,
-  },
-  mapSubtitle: {
-    color: '#566357',
-    fontSize: 14,
-    marginTop: 3,
-  },
   addPointPanel: {
     backgroundColor: '#ffffff',
     borderColor: '#dce3da',
@@ -2269,12 +2282,6 @@ const styles = StyleSheet.create({
   },
   suggestionSection: {
     gap: 8,
-  },
-  suggestionLabel: {
-    color: '#657063',
-    fontSize: 12,
-    fontWeight: '800',
-    textTransform: 'uppercase',
   },
   suggestionList: {
     gap: 8,
@@ -2301,11 +2308,6 @@ const styles = StyleSheet.create({
   activeSuggestionCountry: {
     color: '#1f6b3a',
   },
-  emptySuggestionText: {
-    color: '#657063',
-    fontSize: 13,
-    lineHeight: 18,
-  },
   errorText: {
     color: '#9b3a2f',
     fontSize: 13,
@@ -2316,11 +2318,6 @@ const styles = StyleSheet.create({
     color: '#1d261f',
     fontSize: 18,
     fontWeight: '800',
-  },
-  addPointHint: {
-    color: '#657063',
-    fontSize: 13,
-    lineHeight: 18,
   },
   coordinateBox: {
     backgroundColor: '#f5f7f4',
@@ -2514,25 +2511,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     lineHeight: 18,
     marginTop: 3,
-  },
-  assignDayActions: {
-    flexBasis: '100%',
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  assignDayButton: {
-    backgroundColor: '#eef2ff',
-    borderColor: '#c7d2fe',
-    borderRadius: 6,
-    borderWidth: 1,
-    paddingHorizontal: 9,
-    paddingVertical: 7,
-  },
-  assignDayButtonText: {
-    color: '#1d4ed8',
-    fontSize: 12,
-    fontWeight: '900',
   },
   dayList: {
     gap: 10,
