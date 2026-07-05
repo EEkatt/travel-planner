@@ -84,7 +84,10 @@ const tabs: Array<{ id: TabId; label: string }> = [
 
 const quickActions = ['Жилье', 'Рейсы', 'Заметки'];
 const routeProfile: RouteProfile = 'walking';
-const dayCardDragStep = 78;
+const placeCardDragStep = 78;
+const tripDayDragStep = 142;
+const swipeActionThreshold = 54;
+const swipePreviewLimit = 92;
 const defaultTripDays: TripDay[] = [
   { id: 'day-1', label: 'День 1' },
   { id: 'day-2', label: 'День 2' },
@@ -876,6 +879,30 @@ export default function App() {
       })));
   };
 
+  const reorderTripDay = (dayId: DayId, targetIndex: number) => {
+    const currentIndex = days.findIndex((day) => day.id === dayId);
+    const safeTargetIndex = clamp(Math.round(targetIndex), 0, days.length - 1);
+
+    if (currentIndex < 0 || currentIndex === safeTargetIndex) {
+      return;
+    }
+
+    const reorderedDays = [...days];
+    const [movedDay] = reorderedDays.splice(currentIndex, 1);
+    reorderedDays.splice(safeTargetIndex, 0, movedDay);
+    const { idMap, normalizedDays } = normalizeTripDays(reorderedDays);
+
+    setDays(normalizedDays);
+    setDayItems((currentItems) => currentItems.map((item) => ({
+      ...item,
+      dayId: idMap.get(item.dayId) ?? item.dayId,
+    })));
+    setRoutePlans((currentPlans) => currentPlans.map((plan) => ({
+      ...plan,
+      dayId: idMap.get(plan.dayId) ?? plan.dayId,
+    })));
+  };
+
   const addPlace = (input: AddPlaceInput) => {
     const placeId = `local-${Date.now()}`;
     const nextPlace: Place = {
@@ -957,6 +984,47 @@ export default function App() {
     )));
   };
 
+  const movePlaceToDay = (placeId: string, targetDayId: DayId | null) => {
+    const currentDayItem = dayItems.find((item) => item.placeId === placeId) ?? null;
+    const affectedDayIds = new Set<DayId>();
+
+    if (currentDayItem) {
+      affectedDayIds.add(currentDayItem.dayId);
+    }
+    if (targetDayId) {
+      affectedDayIds.add(targetDayId);
+    }
+
+    let nextDayItems = dayItems.filter((item) => item.placeId !== placeId);
+
+    if (targetDayId) {
+      const nextRouteOrder = Math.max(
+        0,
+        ...nextDayItems.filter((item) => item.dayId === targetDayId).map((item) => item.routeOrder),
+      ) + 1;
+      nextDayItems = [
+        ...nextDayItems,
+        {
+          id: `day-item-${placeId}-${targetDayId}`,
+          tripId: TRIP_ID,
+          dayId: targetDayId,
+          placeId,
+          routeOrder: nextRouteOrder,
+        },
+      ];
+    }
+
+    setDayItems(nextDayItems);
+    setRoutePlans((currentPlans) => {
+      const dayIds = Array.from(affectedDayIds);
+      const unaffectedPlans = currentPlans.filter((plan) => !affectedDayIds.has(plan.dayId));
+
+      return dayIds.reduce((plans, dayId) => (
+        replaceRoutePlan(plans, buildMockRoutePlan(routingProvider, places, nextDayItems, dayId))
+      ), unaffectedPlans);
+    });
+  };
+
   const deletePlace = (placeId: string) => {
     const affectedDayIds = Array.from(new Set(
       dayItems.filter((item) => item.placeId === placeId).map((item) => item.dayId),
@@ -1014,6 +1082,7 @@ export default function App() {
             dayItems={dayItems}
             onAddDay={addDay}
             onDeleteDay={deleteDay}
+            onMoveDay={reorderTripDay}
             places={places}
           />
         )}
@@ -1023,6 +1092,7 @@ export default function App() {
             days={days}
             onAddPlace={addPlace}
             onDeletePlace={deletePlace}
+            onMovePlaceToDay={movePlaceToDay}
             onMoveDayCard={reorderDayCard}
             places={places}
             routePlans={routePlans}
@@ -1094,12 +1164,14 @@ function DaysView({
   days,
   onAddDay,
   onDeleteDay,
+  onMoveDay,
   places,
 }: {
   dayItems: DayItem[];
   days: TripDay[];
   onAddDay: () => void;
   onDeleteDay: (dayId: DayId) => void;
+  onMoveDay: (dayId: DayId, targetIndex: number) => void;
   places: Place[];
 }) {
   return (
@@ -1111,7 +1183,7 @@ function DaysView({
         </TouchableOpacity>
       </View>
       <View style={styles.dayList}>
-        {days.map((day) => {
+        {days.map((day, index) => {
           const items = dayItems
             .filter((item) => item.dayId === day.id)
             .sort((a, b) => a.routeOrder - b.routeOrder)
@@ -1121,41 +1193,129 @@ function DaysView({
             }));
 
           return (
-            <View key={day.id} style={styles.dayCard}>
-              <View style={styles.dayCardContent}>
-                <View style={styles.dayCardHeader}>
-                  <View>
-                    <Text style={styles.dayTitle}>{day.label}</Text>
-                    <Text style={styles.dayMeta}>{items.length > 0 ? `${items.length} пунктов в плане` : 'План можно заполнить позже'}</Text>
-                  </View>
-                  <Text style={styles.dayCount}>{items.length}</Text>
-                </View>
-                {items.length > 0 ? (
-                  <View style={styles.dayPlanList}>
-                    {items.map(({ item, place }) => (
-                      <View key={item.id} style={styles.dayPlanRow}>
-                        <Text style={styles.dayPlanNumber}>{item.routeOrder}</Text>
-                        <View style={styles.placeText}>
-                          <Text style={styles.dayPlanTitle}>{place?.title ?? 'Место не найдено'}</Text>
-                          <Text style={styles.dayPlanMeta}>
-                            {place?.address ?? 'Адрес не указан'}{place?.coordinates ? '' : ' - без точки на карте'}
-                          </Text>
-                        </View>
-                      </View>
-                    ))}
-                  </View>
-                ) : null}
-                {days.length > 1 ? (
-                  <TouchableOpacity style={styles.deleteDayButton} onPress={() => onDeleteDay(day.id)}>
-                    <Text style={styles.deleteDayButtonText}>Удалить день</Text>
-                  </TouchableOpacity>
-                ) : null}
-              </View>
-            </View>
+            <TripDayCard
+              key={day.id}
+              day={day}
+              index={index}
+              itemCount={days.length}
+              items={items}
+              onDeleteDay={onDeleteDay}
+              onMoveDay={onMoveDay}
+            />
           );
         })}
       </View>
     </>
+  );
+}
+
+function TripDayCard({
+  day,
+  index,
+  itemCount,
+  items,
+  onDeleteDay,
+  onMoveDay,
+}: {
+  day: TripDay;
+  index: number;
+  itemCount: number;
+  items: Array<{ item: DayItem; place: Place | null }>;
+  onDeleteDay: (dayId: DayId) => void;
+  onMoveDay: (dayId: DayId, targetIndex: number) => void;
+}) {
+  const [dragOffsetY, setDragOffsetY] = useState(0);
+  const [swipeOffsetX, setSwipeOffsetX] = useState(0);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const maxDragUp = -index * tripDayDragStep;
+  const maxDragDown = (itemCount - index - 1) * tripDayDragStep;
+  const panResponder = useMemo(() => PanResponder.create({
+    onMoveShouldSetPanResponder: (_, gestureState) => (
+      Math.abs(gestureState.dx) > 8 || Math.abs(gestureState.dy) > 8
+    ),
+    onPanResponderGrant: () => {
+      setDragOffsetY(0);
+      setSwipeOffsetX(0);
+    },
+    onPanResponderMove: (_, gestureState) => {
+      if (Math.abs(gestureState.dx) > Math.abs(gestureState.dy)) {
+        setSwipeOffsetX(clamp(gestureState.dx, -swipePreviewLimit, swipePreviewLimit));
+        setDragOffsetY(0);
+        return;
+      }
+
+      setDragOffsetY(clamp(gestureState.dy, maxDragUp, maxDragDown));
+      setSwipeOffsetX(0);
+    },
+    onPanResponderRelease: (_, gestureState) => {
+      if (Math.abs(gestureState.dx) > Math.abs(gestureState.dy)) {
+        setIsActionsOpen(Math.abs(gestureState.dx) >= swipeActionThreshold);
+      } else {
+        const targetIndex = clamp(index + Math.round(gestureState.dy / tripDayDragStep), 0, itemCount - 1);
+        onMoveDay(day.id, targetIndex);
+      }
+      setDragOffsetY(0);
+      setSwipeOffsetX(0);
+    },
+    onPanResponderTerminate: () => {
+      setDragOffsetY(0);
+      setSwipeOffsetX(0);
+    },
+  }), [day.id, index, itemCount, maxDragDown, maxDragUp, onMoveDay]);
+
+  return (
+    <View>
+      <View
+        style={[
+          styles.dayCard,
+          (dragOffsetY !== 0 || swipeOffsetX !== 0) && styles.draggingPlaceCard,
+          dragOffsetY !== 0 && { transform: [{ translateY: dragOffsetY }] },
+          swipeOffsetX !== 0 && { transform: [{ translateX: swipeOffsetX }] },
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <View style={styles.dayCardContent}>
+          <View style={styles.dayCardHeader}>
+            <View>
+              <Text style={styles.dayTitle}>{day.label}</Text>
+              <Text style={styles.dayMeta}>{items.length > 0 ? `${items.length} пунктов в плане` : 'План можно заполнить позже'}</Text>
+            </View>
+            <Text style={styles.dayCount}>{items.length}</Text>
+          </View>
+          {items.length > 0 ? (
+            <View style={styles.dayPlanList}>
+              {items.map(({ item, place }) => (
+                <View key={item.id} style={styles.dayPlanRow}>
+                  <Text style={styles.dayPlanNumber}>{item.routeOrder}</Text>
+                  <View style={styles.placeText}>
+                    <Text style={styles.dayPlanTitle}>{place?.title ?? 'Место не найдено'}</Text>
+                    <Text style={styles.dayPlanMeta}>
+                      {place?.address ?? 'Адрес не указан'}{place?.coordinates ? '' : ' - без точки на карте'}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          ) : null}
+        </View>
+      </View>
+      {isActionsOpen ? (
+        <View style={styles.swipeActions}>
+          <TouchableOpacity
+            style={[styles.swipeActionButton, styles.swipeDeleteButton]}
+            disabled={itemCount <= 1}
+            onPress={() => {
+              onDeleteDay(day.id);
+              setIsActionsOpen(false);
+            }}
+          >
+            <Text style={styles.swipeDeleteButtonText}>
+              {itemCount <= 1 ? 'Нельзя удалить последний день' : 'Удалить'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+    </View>
   );
 }
 
@@ -1164,6 +1324,7 @@ function MapView({
   days,
   onAddPlace,
   onDeletePlace,
+  onMovePlaceToDay,
   onMoveDayCard,
   places,
   routePlans,
@@ -1172,6 +1333,7 @@ function MapView({
   days: TripDay[];
   onAddPlace: (place: AddPlaceInput) => void;
   onDeletePlace: (placeId: string) => void;
+  onMovePlaceToDay: (placeId: string, targetDayId: DayId | null) => void;
   onMoveDayCard: (dayId: DayId, pointId: string, targetIndex: number) => void;
   places: Place[];
   routePlans: RoutePlan[];
@@ -1559,7 +1721,9 @@ function MapView({
             index={index}
             itemCount={snapshot.cards.length}
             mode={mode}
+            onDeletePlace={onDeletePlace}
             onMoveDayCard={onMoveDayCard}
+            onMovePlaceToDay={onMovePlaceToDay}
             place={places.find((candidate) => candidate.id === card.pointId) ?? null}
             tripDays={days}
           />
@@ -1581,7 +1745,9 @@ function MapPlaceCard({
   index,
   itemCount,
   mode,
+  onDeletePlace,
   onMoveDayCard,
+  onMovePlaceToDay,
   place,
   tripDays,
 }: {
@@ -1589,58 +1755,134 @@ function MapPlaceCard({
   index: number;
   itemCount: number;
   mode: MapMode;
+  onDeletePlace: (placeId: string) => void;
   onMoveDayCard: (dayId: DayId, pointId: string, targetIndex: number) => void;
+  onMovePlaceToDay: (placeId: string, targetDayId: DayId | null) => void;
   place: Place | null;
   tripDays: TripDay[];
 }) {
   const dayId = mode.kind === 'day' ? mode.dayId : null;
   const [dragOffsetY, setDragOffsetY] = useState(0);
-  const maxDragUp = -index * dayCardDragStep;
-  const maxDragDown = (itemCount - index - 1) * dayCardDragStep;
+  const [swipeOffsetX, setSwipeOffsetX] = useState(0);
+  const [isActionsOpen, setIsActionsOpen] = useState(false);
+  const [isDayPickerOpen, setIsDayPickerOpen] = useState(false);
+  const maxDragUp = -index * placeCardDragStep;
+  const maxDragDown = (itemCount - index - 1) * placeCardDragStep;
   const panResponder = useMemo(() => PanResponder.create({
-    onMoveShouldSetPanResponder: (_, gestureState) => Boolean(dayId) && Math.abs(gestureState.dy) > 8,
+    onMoveShouldSetPanResponder: (_, gestureState) => (
+      Math.abs(gestureState.dx) > 8 || (Boolean(dayId) && Math.abs(gestureState.dy) > 8)
+    ),
     onPanResponderGrant: () => {
       setDragOffsetY(0);
+      setSwipeOffsetX(0);
     },
     onPanResponderMove: (_, gestureState) => {
+      if (Math.abs(gestureState.dx) > Math.abs(gestureState.dy)) {
+        setSwipeOffsetX(clamp(gestureState.dx, -swipePreviewLimit, swipePreviewLimit));
+        setDragOffsetY(0);
+        return;
+      }
       if (!dayId) {
         return;
       }
 
       setDragOffsetY(clamp(gestureState.dy, maxDragUp, maxDragDown));
+      setSwipeOffsetX(0);
     },
     onPanResponderRelease: (_, gestureState) => {
-      if (dayId) {
-        const targetIndex = clamp(index + Math.round(gestureState.dy / dayCardDragStep), 0, itemCount - 1);
+      if (Math.abs(gestureState.dx) > Math.abs(gestureState.dy)) {
+        const shouldOpenActions = Math.abs(gestureState.dx) >= swipeActionThreshold;
+        setIsActionsOpen(shouldOpenActions);
+        if (!shouldOpenActions) {
+          setIsDayPickerOpen(false);
+        }
+      } else if (dayId) {
+        const targetIndex = clamp(index + Math.round(gestureState.dy / placeCardDragStep), 0, itemCount - 1);
         onMoveDayCard(dayId, card.pointId, targetIndex);
       }
       setDragOffsetY(0);
+      setSwipeOffsetX(0);
     },
     onPanResponderTerminate: () => {
       setDragOffsetY(0);
+      setSwipeOffsetX(0);
     },
   }), [card.pointId, dayId, index, itemCount, maxDragDown, maxDragUp, onMoveDayCard]);
   const coordinatesCopy = place?.coordinates
     ? `${place.coordinates.latitude.toFixed(5)}, ${place.coordinates.longitude.toFixed(5)}`
     : 'координаты нужно уточнить';
   const dayCopy = card.dayId ? dayLabelForId(card.dayId, tripDays) : 'Без дня';
+  const canMoveToDays = tripDays.filter((day) => day.id !== card.dayId);
+  const closeActions = () => {
+    setIsActionsOpen(false);
+    setIsDayPickerOpen(false);
+  };
 
   return (
-    <View
-      style={[
-        styles.placeCard,
-        dayId && styles.draggablePlaceCard,
-        dayId && dragOffsetY !== 0 && styles.draggingPlaceCard,
-        dayId && dragOffsetY !== 0 && { transform: [{ translateY: dragOffsetY }] },
-      ]}
-      {...(dayId ? panResponder.panHandlers : {})}
-    >
-      <View style={styles.placeText}>
-        <Text style={styles.placeTitle}>{card.title}</Text>
-        <Text style={styles.placeMeta}>
-          {dayCopy} - {coordinatesCopy}{dayId ? ' - потяните карточку для изменения порядка' : ''}
-        </Text>
+    <View>
+      <View
+        style={[
+          styles.placeCard,
+          dayId && styles.draggablePlaceCard,
+          (dragOffsetY !== 0 || swipeOffsetX !== 0) && styles.draggingPlaceCard,
+          dragOffsetY !== 0 && { transform: [{ translateY: dragOffsetY }] },
+          swipeOffsetX !== 0 && { transform: [{ translateX: swipeOffsetX }] },
+        ]}
+        {...panResponder.panHandlers}
+      >
+        <View style={styles.placeText}>
+          <Text style={styles.placeTitle}>{card.title}</Text>
+          <Text style={styles.placeMeta}>
+            {dayCopy} - {coordinatesCopy}{dayId ? ' - потяните карточку для изменения порядка' : ''}
+          </Text>
+        </View>
       </View>
+      {isActionsOpen ? (
+        <View style={styles.swipeActions}>
+          <TouchableOpacity
+            style={[styles.swipeActionButton, styles.swipeDeleteButton]}
+            onPress={() => {
+              onDeletePlace(card.pointId);
+              closeActions();
+            }}
+          >
+            <Text style={styles.swipeDeleteButtonText}>Удалить</Text>
+          </TouchableOpacity>
+          {card.dayId ? (
+            <TouchableOpacity
+              style={styles.swipeActionButton}
+              onPress={() => {
+                onMovePlaceToDay(card.pointId, null);
+                closeActions();
+              }}
+            >
+              <Text style={styles.swipeActionButtonText}>Вне дня</Text>
+            </TouchableOpacity>
+          ) : null}
+          <TouchableOpacity
+            style={styles.swipeActionButton}
+            onPress={() => setIsDayPickerOpen((value) => !value)}
+          >
+            <Text style={styles.swipeActionButtonText}>{card.dayId ? 'Переместить' : 'Добавить в день'}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+      {isActionsOpen && isDayPickerOpen ? (
+        <View style={styles.swipeDayPicker}>
+          {canMoveToDays.map((day) => (
+            <TouchableOpacity
+              key={day.id}
+              style={styles.swipeDayButton}
+              onPress={() => {
+                onMovePlaceToDay(card.pointId, day.id);
+                closeActions();
+              }}
+            >
+              <Text style={styles.swipeDayButtonText}>{day.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -2498,6 +2740,55 @@ const styles = StyleSheet.create({
     opacity: 0.92,
     zIndex: 3,
   },
+  swipeActions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  swipeActionButton: {
+    alignItems: 'center',
+    backgroundColor: '#eef2ff',
+    borderColor: '#c7d2fe',
+    borderRadius: 7,
+    borderWidth: 1,
+    flexGrow: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 9,
+  },
+  swipeActionButtonText: {
+    color: '#1d4ed8',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  swipeDeleteButton: {
+    backgroundColor: '#fff1f2',
+    borderColor: '#fecdd3',
+  },
+  swipeDeleteButtonText: {
+    color: '#be123c',
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  swipeDayPicker: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 8,
+  },
+  swipeDayButton: {
+    backgroundColor: '#f5f7f4',
+    borderColor: '#dce3da',
+    borderRadius: 7,
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+  },
+  swipeDayButtonText: {
+    color: '#3e4a3c',
+    fontSize: 13,
+    fontWeight: '800',
+  },
   placeText: {
     flex: 1,
   },
@@ -2565,20 +2856,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     marginTop: 2,
-  },
-  deleteDayButton: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#fff1f2',
-    borderColor: '#fecdd3',
-    borderRadius: 6,
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-  },
-  deleteDayButtonText: {
-    color: '#be123c',
-    fontSize: 12,
-    fontWeight: '900',
   },
   dayTitle: {
     color: '#1d261f',
