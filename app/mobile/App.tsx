@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { createElement, useEffect, useMemo, useRef, useState } from 'react';
+import { createElement, useEffect, useMemo, useState } from 'react';
 import { Image, PanResponder, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import {
   MOCK_DAY_1_ROUTE_PLAN,
@@ -87,12 +87,21 @@ const tabs: Array<{ id: TabId; label: string }> = [
 
 const quickActions = ['Жилье', 'Рейсы', 'Заметки'];
 const routeProfile: RouteProfile = 'walking';
+const dayCardDragStep = 78;
 const defaultTripDays: TripDay[] = [
   { id: 'day-1', label: 'День 1' },
   { id: 'day-2', label: 'День 2' },
 ];
 
 const georgiaPlaceSuggestions: PlaceSuggestion[] = [
+  {
+    address: 'Грузия',
+    countryCode: 'GE',
+    id: 'ge-tbilisi',
+    latitude: 41.7151,
+    longitude: 44.8271,
+    title: 'Тбилиси',
+  },
   {
     address: 'Тбилиси, Грузия',
     countryCode: 'GE',
@@ -108,6 +117,22 @@ const georgiaPlaceSuggestions: PlaceSuggestion[] = [
     latitude: 41.6937,
     longitude: 44.8106,
     title: 'Парк Рике',
+  },
+  {
+    address: 'Тбилиси, Грузия',
+    countryCode: 'GE',
+    id: 'ge-mtatsminda-park',
+    latitude: 41.6946,
+    longitude: 44.7853,
+    title: 'Парк Мтацминда',
+  },
+  {
+    address: 'Старый Тбилиси, Грузия',
+    countryCode: 'GE',
+    id: 'ge-botanical-garden',
+    latitude: 41.6855,
+    longitude: 44.8056,
+    title: 'Национальный ботанический сад Грузии',
   },
   {
     address: 'Площадь Свободы, Тбилиси, Грузия',
@@ -700,7 +725,7 @@ export default function App() {
     }
   };
 
-  const reorderDayCard = (dayId: DayId, pointId: string, direction: -1 | 1) => {
+  const reorderDayCard = (dayId: DayId, pointId: string, targetIndex: number) => {
     const snapshot = buildMapViewSnapshot({
       tripId: TRIP_ID,
       mode: { kind: 'day', dayId },
@@ -712,17 +737,15 @@ export default function App() {
     });
     const orderedPointIds = snapshot.cards.map((card) => card.pointId);
     const currentIndex = orderedPointIds.indexOf(pointId);
-    const nextIndex = currentIndex + direction;
+    const safeTargetIndex = clamp(Math.round(targetIndex), 0, orderedPointIds.length - 1);
 
-    if (currentIndex < 0 || nextIndex < 0 || nextIndex >= orderedPointIds.length) {
+    if (currentIndex < 0 || currentIndex === safeTargetIndex) {
       return;
     }
 
     const nextOrderedPointIds = [...orderedPointIds];
-    [nextOrderedPointIds[currentIndex], nextOrderedPointIds[nextIndex]] = [
-      nextOrderedPointIds[nextIndex],
-      nextOrderedPointIds[currentIndex],
-    ];
+    const [movedPointId] = nextOrderedPointIds.splice(currentIndex, 1);
+    nextOrderedPointIds.splice(safeTargetIndex, 0, movedPointId);
     const nextDayItems = applyReorderedDayItems(dayItems, dayId, nextOrderedPointIds);
 
     setDayItems(nextDayItems);
@@ -984,13 +1007,12 @@ function MapView({
   onAddPlace: (place: AddPlaceInput) => void;
   onAssignPlaceToDay: (placeId: string, dayId: DayId) => void;
   onDeletePlace: (placeId: string) => void;
-  onMoveDayCard: (dayId: DayId, pointId: string, direction: -1 | 1) => void;
+  onMoveDayCard: (dayId: DayId, pointId: string, targetIndex: number) => void;
   onRefreshRoute: (dayId: DayId) => void;
   places: Place[];
   routePlans: RoutePlan[];
 }) {
   const [selectedFilter, setSelectedFilter] = useState<MapFilter>('Все');
-  const [zoom, setZoom] = useState(100);
   const [addQuery, setAddQuery] = useState('');
   const [addDay, setAddDay] = useState<MapDay>('Без дня');
   const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
@@ -1036,16 +1058,18 @@ function MapView({
   const normalizedQuery = normalizeSuggestionText(addQuery);
   const shownSuggestions = useMemo(() => {
     if (!normalizedQuery) {
-      return georgiaPlaceSuggestions.slice(0, 6);
+      return [];
     }
 
     return georgiaPlaceSuggestions
-      .filter((suggestion) => {
-        const searchableText = normalizeSuggestionText(`${suggestion.title} ${suggestion.address}`);
-
-        return searchableText.includes(normalizedQuery);
-      })
-      .slice(0, 10);
+      .map((suggestion) => ({
+        score: getSuggestionScore(suggestion, normalizedQuery),
+        suggestion,
+      }))
+      .filter((rankedSuggestion) => rankedSuggestion.score < Number.MAX_SAFE_INTEGER)
+      .sort((a, b) => a.score - b.score || a.suggestion.title.localeCompare(b.suggestion.title, 'ru-RU'))
+      .slice(0, 5)
+      .map((rankedSuggestion) => rankedSuggestion.suggestion);
   }, [normalizedQuery]);
   const selectedSuggestion = selectedSuggestionId
     ? georgiaPlaceSuggestions.find((suggestion) => suggestion.id === selectedSuggestionId) ?? null
@@ -1192,16 +1216,6 @@ function MapView({
             );
           })}
         </ScrollView>
-
-        <View style={styles.zoomControls}>
-          <TouchableOpacity style={styles.zoomButton} onPress={() => setZoom((value) => Math.max(80, value - 20))}>
-            <Text style={styles.zoomButtonText}>-</Text>
-          </TouchableOpacity>
-          <Text style={styles.zoomValue}>{zoom}%</Text>
-          <TouchableOpacity style={styles.zoomButton} onPress={() => setZoom((value) => Math.min(160, value + 20))}>
-            <Text style={styles.zoomButtonText}>+</Text>
-          </TouchableOpacity>
-        </View>
       </View>
 
       <View
@@ -1228,7 +1242,7 @@ function MapView({
             style={styles.mapLayer}
             onPress={(event) => handleNativeMapTap(event.nativeEvent.locationX, event.nativeEvent.locationY)}
           >
-            <View style={[styles.mapLayer, { transform: [{ scale: zoom / 100 }] }]}>
+            <View style={styles.mapLayer}>
               <View style={[styles.mapRoad, styles.mapRoadMain]} />
               <View style={[styles.mapRoad, styles.mapRoadSide]} />
               <View style={[styles.mapArea, styles.mapAreaOne]} />
@@ -1323,9 +1337,8 @@ function MapView({
           })}
         </View>
 
-        <View style={styles.suggestionSection}>
-          <Text style={styles.suggestionLabel}>Подсказки по Грузии</Text>
-          {shownSuggestions.length > 0 ? (
+        {shownSuggestions.length > 0 ? (
+          <View style={styles.suggestionSection}>
             <View style={styles.suggestionList}>
               {shownSuggestions.map((suggestion) => {
                 const isSelected = selectedSuggestionId === suggestion.id;
@@ -1347,10 +1360,8 @@ function MapView({
                 );
               })}
             </View>
-          ) : (
-            <Text style={styles.emptySuggestionText}>По локальным местам Грузии ничего не найдено. Можно сохранить как текстовую заметку.</Text>
-          )}
-        </View>
+          </View>
+        ) : null}
 
         <View style={styles.coordinateBox}>
           <Text style={styles.coordinateText}>
@@ -1417,8 +1428,8 @@ function MapView({
           <MapPlaceCard
             key={card.pointId}
             card={card}
-            isFirst={index === 0}
-            isLast={index === snapshot.cards.length - 1}
+            index={index}
+            itemCount={snapshot.cards.length}
             mode={mode}
             onAssignPlaceToDay={onAssignPlaceToDay}
             onMoveDayCard={onMoveDayCard}
@@ -1440,8 +1451,8 @@ function MapView({
 
 function MapPlaceCard({
   card,
-  isFirst,
-  isLast,
+  index,
+  itemCount,
   mode,
   onAssignPlaceToDay,
   onMoveDayCard,
@@ -1449,69 +1460,62 @@ function MapPlaceCard({
   tripDays,
 }: {
   card: MapCardView;
-  isFirst: boolean;
-  isLast: boolean;
+  index: number;
+  itemCount: number;
   mode: MapMode;
   onAssignPlaceToDay: (placeId: string, dayId: DayId) => void;
-  onMoveDayCard: (dayId: DayId, pointId: string, direction: -1 | 1) => void;
+  onMoveDayCard: (dayId: DayId, pointId: string, targetIndex: number) => void;
   place: Place | null;
   tripDays: TripDay[];
 }) {
   const dayId = mode.kind === 'day' ? mode.dayId : null;
-  const lastDragDirection = useRef<0 | -1 | 1>(0);
+  const [dragOffsetY, setDragOffsetY] = useState(0);
+  const maxDragUp = -index * dayCardDragStep;
+  const maxDragDown = (itemCount - index - 1) * dayCardDragStep;
   const panResponder = useMemo(() => PanResponder.create({
     onMoveShouldSetPanResponder: (_, gestureState) => Boolean(dayId) && Math.abs(gestureState.dy) > 8,
     onPanResponderGrant: () => {
-      lastDragDirection.current = 0;
+      setDragOffsetY(0);
     },
     onPanResponderMove: (_, gestureState) => {
       if (!dayId) {
         return;
       }
 
-      const direction = gestureState.dy < -42 ? -1 : gestureState.dy > 42 ? 1 : 0;
-      if (direction === 0 || direction === lastDragDirection.current) {
-        return;
-      }
-      if ((direction === -1 && isFirst) || (direction === 1 && isLast)) {
-        return;
-      }
-
-      lastDragDirection.current = direction;
-      onMoveDayCard(dayId, card.pointId, direction);
+      setDragOffsetY(clamp(gestureState.dy, maxDragUp, maxDragDown));
     },
-    onPanResponderRelease: () => {
-      lastDragDirection.current = 0;
+    onPanResponderRelease: (_, gestureState) => {
+      if (dayId) {
+        const targetIndex = clamp(index + Math.round(gestureState.dy / dayCardDragStep), 0, itemCount - 1);
+        onMoveDayCard(dayId, card.pointId, targetIndex);
+      }
+      setDragOffsetY(0);
     },
     onPanResponderTerminate: () => {
-      lastDragDirection.current = 0;
+      setDragOffsetY(0);
     },
-  }), [card.pointId, dayId, isFirst, isLast, onMoveDayCard]);
+  }), [card.pointId, dayId, index, itemCount, maxDragDown, maxDragUp, onMoveDayCard]);
   const coordinatesCopy = place?.coordinates
     ? `${place.coordinates.latitude.toFixed(5)}, ${place.coordinates.longitude.toFixed(5)}`
     : 'координаты нужно уточнить';
   const dayCopy = card.dayId ? dayLabelForId(card.dayId, tripDays) : 'Без дня';
 
   return (
-    <View style={[styles.placeCard, dayId && styles.draggablePlaceCard]} {...(dayId ? panResponder.panHandlers : {})}>
-      {card.kind === 'place' ? (
-        <View style={[styles.placeNumber, !card.dayId && styles.unscheduledPlaceNumber]}>
-          <Text style={styles.placeNumberText}>{card.routeOrder ?? ''}</Text>
-        </View>
-      ) : (
-        <View style={styles.missingDot} />
-      )}
+    <View
+      style={[
+        styles.placeCard,
+        dayId && styles.draggablePlaceCard,
+        dayId && dragOffsetY !== 0 && styles.draggingPlaceCard,
+        dayId && dragOffsetY !== 0 && { transform: [{ translateY: dragOffsetY }] },
+      ]}
+      {...(dayId ? panResponder.panHandlers : {})}
+    >
       <View style={styles.placeText}>
         <Text style={styles.placeTitle}>{card.title}</Text>
         <Text style={styles.placeMeta}>
-          {dayCopy} - {coordinatesCopy}{dayId ? ' - потяните карточку, чтобы изменить порядок' : ''}
+          {dayCopy} - {coordinatesCopy}{dayId ? ' - потяните карточку для изменения порядка' : ''}
         </Text>
       </View>
-      {dayId && (
-        <View style={styles.dragHandle}>
-          <Text style={styles.dragHandleText}>☰</Text>
-        </View>
-      )}
       {!card.dayId && tripDays.length > 0 ? (
         <View style={styles.assignDayActions}>
           {tripDays.map((day) => (
@@ -1629,6 +1633,29 @@ function buildLeafletMapHtml(pins: MapPin[], routeGeometry: RouteGeometrySnapsho
 
 function normalizeSuggestionText(value: string) {
   return value.trim().toLocaleLowerCase('ru-RU');
+}
+
+function getSuggestionScore(suggestion: PlaceSuggestion, normalizedQuery: string) {
+  const title = normalizeSuggestionText(suggestion.title);
+  const address = normalizeSuggestionText(suggestion.address);
+
+  if (title === normalizedQuery) {
+    return 0;
+  }
+  if (title.startsWith(normalizedQuery)) {
+    return 1;
+  }
+  if (title.includes(normalizedQuery)) {
+    return 2;
+  }
+  if (address.startsWith(normalizedQuery)) {
+    return 3;
+  }
+  if (address.includes(normalizedQuery)) {
+    return 4;
+  }
+
+  return Number.MAX_SAFE_INTEGER;
 }
 
 function getPlaceDetails(place: Place): PlaceDetails {
@@ -2017,49 +2044,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 6,
     justifyContent: 'center',
-    minHeight: 44,
-    width: 176,
-    paddingHorizontal: 14,
-    paddingVertical: 11,
+    minHeight: 40,
+    width: 92,
+    paddingHorizontal: 8,
+    paddingVertical: 9,
   },
   activeFilterTab: {
     backgroundColor: '#ffffff',
   },
   filterText: {
     color: '#657063',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '800',
   },
   activeFilterText: {
     color: '#1d261f',
-  },
-  zoomControls: {
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    backgroundColor: '#ffffff',
-    borderColor: '#dce3da',
-    borderRadius: 8,
-    borderWidth: 1,
-    flexDirection: 'row',
-    overflow: 'hidden',
-  },
-  zoomButton: {
-    alignItems: 'center',
-    height: 38,
-    justifyContent: 'center',
-    width: 42,
-  },
-  zoomButtonText: {
-    color: '#1d261f',
-    fontSize: 22,
-    fontWeight: '900',
-  },
-  zoomValue: {
-    color: '#657063',
-    fontSize: 13,
-    fontWeight: '800',
-    minWidth: 48,
-    textAlign: 'center',
   },
   mapCanvas: {
     aspectRatio: 0.9,
@@ -2488,41 +2487,19 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   placeCard: {
-    alignItems: 'center',
     backgroundColor: '#ffffff',
     borderColor: '#dce3da',
     borderRadius: 8,
     borderWidth: 1,
-    flexWrap: 'wrap',
-    flexDirection: 'row',
     gap: 12,
     padding: 13,
   },
   draggablePlaceCard: {
     borderColor: '#bfdbfe',
   },
-  placeNumber: {
-    alignItems: 'center',
-    backgroundColor: '#d92d20',
-    borderRadius: 999,
-    height: 28,
-    justifyContent: 'center',
-    width: 28,
-  },
-  unscheduledPlaceNumber: {
-    backgroundColor: '#5f6770',
-  },
-  placeNumberText: {
-    color: '#ffffff',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  missingDot: {
-    backgroundColor: '#a3aaa1',
-    borderRadius: 999,
-    height: 14,
-    marginHorizontal: 7,
-    width: 14,
+  draggingPlaceCard: {
+    opacity: 0.92,
+    zIndex: 3,
   },
   placeText: {
     flex: 1,
@@ -2538,27 +2515,11 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 3,
   },
-  dragHandle: {
-    alignItems: 'center',
-    backgroundColor: '#eff6ff',
-    borderColor: '#c7d2fe',
-    borderRadius: 6,
-    borderWidth: 1,
-    height: 36,
-    justifyContent: 'center',
-    width: 36,
-  },
-  dragHandleText: {
-    color: '#1d4ed8',
-    fontSize: 18,
-    fontWeight: '900',
-  },
   assignDayActions: {
     flexBasis: '100%',
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 8,
-    paddingLeft: 40,
   },
   assignDayButton: {
     backgroundColor: '#eef2ff',
