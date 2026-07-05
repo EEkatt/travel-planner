@@ -917,6 +917,18 @@ export default function App() {
     setNotes((currentNotes) => currentNotes.filter((note) => note.id !== noteId));
   };
 
+  const updateNote = (noteId: string, patch: Partial<Pick<TripNote, 'body' | 'title'>>) => {
+    setNotes((currentNotes) => currentNotes.map((note) => (
+      note.id === noteId
+        ? {
+          ...note,
+          ...patch,
+          updatedAt: 'сейчас',
+        }
+        : note
+    )));
+  };
+
   const addDay = () => {
     setDays((currentDays) => {
       const nextNumber = Math.max(
@@ -1202,6 +1214,7 @@ export default function App() {
             notes={notes}
             onAddNote={addNote}
             onDeleteNote={deleteNote}
+            onUpdateNote={updateNote}
           />
         )}
       </ScrollView>
@@ -1494,11 +1507,32 @@ function NotesView({
   notes,
   onAddNote,
   onDeleteNote,
+  onUpdateNote,
 }: {
   notes: TripNote[];
   onAddNote: () => void;
   onDeleteNote: (noteId: string) => void;
+  onUpdateNote: (noteId: string, patch: Partial<Pick<TripNote, 'body' | 'title'>>) => void;
 }) {
+  const [selectedNoteId, setSelectedNoteId] = useState<string | null>(null);
+  const selectedNote = selectedNoteId ? notes.find((note) => note.id === selectedNoteId) ?? null : null;
+
+  useEffect(() => {
+    if (selectedNoteId && !selectedNote) {
+      setSelectedNoteId(null);
+    }
+  }, [selectedNote, selectedNoteId]);
+
+  if (selectedNote) {
+    return (
+      <NoteEditor
+        note={selectedNote}
+        onBack={() => setSelectedNoteId(null)}
+        onUpdateNote={onUpdateNote}
+      />
+    );
+  }
+
   return (
     <>
       <View style={styles.sectionHeader}>
@@ -1513,6 +1547,7 @@ function NotesView({
             key={note.id}
             note={note}
             onDeleteNote={onDeleteNote}
+            onOpenNote={setSelectedNoteId}
           />
         ))}
       </View>
@@ -1523,9 +1558,11 @@ function NotesView({
 function NoteCard({
   note,
   onDeleteNote,
+  onOpenNote,
 }: {
   note: TripNote;
   onDeleteNote: (noteId: string) => void;
+  onOpenNote: (noteId: string) => void;
 }) {
   const [swipeOffsetX, setSwipeOffsetX] = useState(0);
   const [isActionsOpen, setIsActionsOpen] = useState(false);
@@ -1561,6 +1598,7 @@ function NoteCard({
           swipeOffsetX !== 0 && styles.draggingPlaceCard,
           swipeOffsetX !== 0 && { transform: [{ translateX: swipeOffsetX }] },
         ]}
+        onPress={() => onOpenNote(note.id)}
         {...panResponder.panHandlers}
       >
         <View style={styles.noteText}>
@@ -1583,6 +1621,45 @@ function NoteCard({
         </View>
       ) : null}
     </View>
+  );
+}
+
+function NoteEditor({
+  note,
+  onBack,
+  onUpdateNote,
+}: {
+  note: TripNote;
+  onBack: () => void;
+  onUpdateNote: (noteId: string, patch: Partial<Pick<TripNote, 'body' | 'title'>>) => void;
+}) {
+  return (
+    <>
+      <View style={styles.noteEditorHeader}>
+        <TouchableOpacity onPress={onBack}>
+          <Text style={styles.sectionAction}>Назад</Text>
+        </TouchableOpacity>
+        <Text style={styles.noteDate}>{note.updatedAt}</Text>
+      </View>
+      <View style={styles.noteEditorPanel}>
+        <TextInput
+          style={styles.noteTitleInput}
+          onChangeText={(value) => onUpdateNote(note.id, { title: value })}
+          placeholder="Название"
+          placeholderTextColor="#8b9489"
+          value={note.title}
+        />
+        <TextInput
+          multiline
+          style={styles.noteBodyInput}
+          onChangeText={(value) => onUpdateNote(note.id, { body: value })}
+          placeholder="Напишите заметку"
+          placeholderTextColor="#8b9489"
+          textAlignVertical="top"
+          value={note.body}
+        />
+      </View>
+    </>
   );
 }
 
@@ -2790,6 +2867,33 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '700',
     marginTop: 2,
+  },
+  noteEditorHeader: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  noteEditorPanel: {
+    backgroundColor: '#ffffff',
+    borderColor: '#dce3da',
+    borderRadius: 8,
+    borderWidth: 1,
+    marginBottom: 18,
+    padding: 14,
+  },
+  noteTitleInput: {
+    color: '#1d261f',
+    fontSize: 22,
+    fontWeight: '900',
+    paddingVertical: 8,
+  },
+  noteBodyInput: {
+    color: '#2f392f',
+    fontSize: 16,
+    lineHeight: 23,
+    minHeight: 280,
+    paddingTop: 12,
   },
   tabs: {
     backgroundColor: '#e7ece5',
