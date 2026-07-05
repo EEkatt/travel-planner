@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { createElement, useEffect, useMemo, useRef, useState } from 'react';
-import { PanResponder, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Image, PanResponder, Platform, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import {
   MOCK_DAY_1_ROUTE_PLAN,
   SHARED_DAY_ITEMS,
@@ -42,8 +42,14 @@ type AddPlaceInput = {
   address: string | null;
   coordinates: Coordinates | null;
   day: MapDay;
+  suggestionId?: string;
   source: Place['source'];
   title: string;
+};
+
+type PlaceDetails = {
+  description: string;
+  imageUrl: string;
 };
 
 const trip = {
@@ -529,6 +535,69 @@ const georgiaPlaceSuggestions: PlaceSuggestion[] = [
   },
 ];
 
+const placeDetailsByKey: Record<string, PlaceDetails> = {
+  'ge-narikala': {
+    description: 'Крепость над Старым Тбилиси с видом на серные бани, реку Куру и центр города.',
+    imageUrl: 'https://source.unsplash.com/640x360/?narikala,tbilisi',
+  },
+  'ge-rike': {
+    description: 'Парк у Моста мира и нижней станции канатной дороги к Нарикале.',
+    imageUrl: 'https://source.unsplash.com/640x360/?rike,park,tbilisi',
+  },
+  'ge-freedom-square': {
+    description: 'Центральная площадь Тбилиси и удобная точка старта прогулки по центру.',
+    imageUrl: 'https://source.unsplash.com/640x360/?freedom,square,tbilisi',
+  },
+  'ge-sulfur-baths': {
+    description: 'Исторический район Абанотубани с серными банями и плотной старой застройкой.',
+    imageUrl: 'https://source.unsplash.com/640x360/?abanotubani,tbilisi',
+  },
+  'ge-ali-nino': {
+    description: 'Движущаяся скульптура на набережной Батуми, один из самых узнаваемых объектов города.',
+    imageUrl: 'https://source.unsplash.com/640x360/?batumi,ali,nino',
+  },
+  'ge-batumi-boulevard': {
+    description: 'Длинная прогулочная зона вдоль моря с парками, кафе и видами на береговую линию.',
+    imageUrl: 'https://source.unsplash.com/640x360/?batumi,boulevard',
+  },
+  'ge-gergeti': {
+    description: 'Горная церковь у Степанцминды с видом на Казбек и долину.',
+    imageUrl: 'https://source.unsplash.com/640x360/?gergeti,kazbegi',
+  },
+  'ge-vardzia': {
+    description: 'Пещерный монастырский комплекс в скале на юге Грузии.',
+    imageUrl: 'https://source.unsplash.com/640x360/?vardzia,georgia',
+  },
+  'ge-mestia': {
+    description: 'Главный поселок Верхней Сванетии, база для маршрутов к башням и горам.',
+    imageUrl: 'https://source.unsplash.com/640x360/?mestia,svaneti',
+  },
+  'ge-ushguli': {
+    description: 'Высокогорное село Сванетии с башнями и видами на Кавказ.',
+    imageUrl: 'https://source.unsplash.com/640x360/?ushguli,svaneti',
+  },
+  'pt-noday-rike': {
+    description: 'Парк у Моста мира и нижней станции канатной дороги к Нарикале.',
+    imageUrl: 'https://source.unsplash.com/640x360/?rike,park,tbilisi',
+  },
+  'pt-day1-narikala': {
+    description: 'Крепость над Старым Тбилиси с видом на серные бани, реку Куру и центр города.',
+    imageUrl: 'https://source.unsplash.com/640x360/?narikala,tbilisi',
+  },
+  'pt-day1-liberty': {
+    description: 'Центральная площадь Тбилиси и удобная точка старта прогулки по центру.',
+    imageUrl: 'https://source.unsplash.com/640x360/?freedom,square,tbilisi',
+  },
+  'pt-day1-baths': {
+    description: 'Исторический район Абанотубани с серными банями и плотной старой застройкой.',
+    imageUrl: 'https://source.unsplash.com/640x360/?abanotubani,tbilisi',
+  },
+  'pt-day2-mtskheta': {
+    description: 'Один из главных соборов Мцхеты, исторической столицы Грузии.',
+    imageUrl: 'https://source.unsplash.com/640x360/?svetitskhoveli,mtskheta',
+  },
+};
+
 export default function App() {
   const [activeTab, setActiveTab] = useState<TabId>('map');
   const [places, setPlaces] = useState<Place[]>(SHARED_PLACES);
@@ -594,7 +663,7 @@ export default function App() {
       countryCode: input.coordinates ? 'GE' : null,
       source: input.source,
       provider: input.source === 'search_result' ? 'mock-local-georgia' : undefined,
-      providerPlaceId: undefined,
+      providerPlaceId: input.suggestionId,
       providerAttribution: input.source === 'search_result' ? 'local fixture' : undefined,
     };
     const nextPlaces = [...places, nextPlace];
@@ -690,6 +759,23 @@ export default function App() {
     )));
   };
 
+  const deletePlace = (placeId: string) => {
+    const affectedDayIds = Array.from(new Set(
+      dayItems.filter((item) => item.placeId === placeId).map((item) => item.dayId),
+    ));
+    const nextPlaces = places.filter((place) => place.id !== placeId);
+    const nextDayItems = dayItems.filter((item) => item.placeId !== placeId);
+
+    setPlaces(nextPlaces);
+    setDayItems(nextDayItems);
+    setRoutePlans((currentPlans) => {
+      const unaffectedPlans = currentPlans.filter((plan) => !affectedDayIds.includes(plan.dayId));
+      return affectedDayIds.reduce((plans, dayId) => (
+        replaceRoutePlan(plans, buildMockRoutePlan(routingProvider, nextPlaces, nextDayItems, dayId))
+      ), unaffectedPlans);
+    });
+  };
+
   return (
     <SafeAreaView style={styles.screen}>
       <StatusBar style="auto" />
@@ -744,6 +830,7 @@ export default function App() {
             days={days}
             onAddPlace={addPlace}
             onAssignPlaceToDay={assignPlaceToDay}
+            onDeletePlace={deletePlace}
             onMoveDayCard={reorderDayCard}
             onRefreshRoute={refreshMockRoute}
             places={places}
@@ -886,6 +973,7 @@ function MapView({
   days,
   onAddPlace,
   onAssignPlaceToDay,
+  onDeletePlace,
   onMoveDayCard,
   onRefreshRoute,
   places,
@@ -895,6 +983,7 @@ function MapView({
   days: TripDay[];
   onAddPlace: (place: AddPlaceInput) => void;
   onAssignPlaceToDay: (placeId: string, dayId: DayId) => void;
+  onDeletePlace: (placeId: string) => void;
   onMoveDayCard: (dayId: DayId, pointId: string, direction: -1 | 1) => void;
   onRefreshRoute: (dayId: DayId) => void;
   places: Place[];
@@ -904,6 +993,7 @@ function MapView({
   const [zoom, setZoom] = useState(100);
   const [addQuery, setAddQuery] = useState('');
   const [addDay, setAddDay] = useState<MapDay>('Без дня');
+  const [selectedPlaceId, setSelectedPlaceId] = useState<string | null>(null);
   const [selectedSuggestionId, setSelectedSuggestionId] = useState<string | null>(null);
   const [draftCoordinates, setDraftCoordinates] = useState<{ latitude: number; longitude: number } | null>(null);
   const [mapCanvasSize, setMapCanvasSize] = useState({ height: 0, width: 0 });
@@ -932,6 +1022,8 @@ function MapView({
   const hiddenCards = snapshot.cards.filter((card) => card.kind === 'missing_target');
   const visibleCards = snapshot.cards.filter((card) => card.kind === 'place');
   const selectedDayId = mode.kind === 'day' ? mode.dayId : null;
+  const selectedMapPlace = selectedPlaceId ? places.find((place) => place.id === selectedPlaceId) ?? null : null;
+  const selectedMapPlaceDetails = selectedMapPlace ? getPlaceDetails(selectedMapPlace) : null;
   const routeStatusCopy = getRouteStatusCopy(snapshot.routeState, snapshot.routeGeometry);
   const routePreviewSegments = useMemo(
     () => buildRoutePreviewSegments(snapshot.routeGeometry?.coordinates ?? []),
@@ -963,6 +1055,12 @@ function MapView({
   const canSaveAddPlace = Boolean(selectedSuggestion) || trimmedQuery.length > 0;
 
   useEffect(() => {
+    if (selectedPlaceId && !places.some((place) => place.id === selectedPlaceId)) {
+      setSelectedPlaceId(null);
+    }
+  }, [places, selectedPlaceId]);
+
+  useEffect(() => {
     if (Platform.OS !== 'web') {
       return undefined;
     }
@@ -971,6 +1069,9 @@ function MapView({
       const payload = event.data;
 
       if (!payload || payload.type !== 'trip-map-click') {
+        if (payload?.type === 'trip-map-marker' && typeof payload.pointId === 'string') {
+          setSelectedPlaceId(payload.pointId);
+        }
         return;
       }
 
@@ -1029,6 +1130,7 @@ function MapView({
         ? { latitude: coordinateSource.latitude, longitude: coordinateSource.longitude }
         : null,
       day: addDay,
+      suggestionId: selectedSuggestion?.id,
       source: selectedSuggestion ? 'search_result' : draftCoordinates ? 'manual_map_tap' : 'manual_text',
     });
     setSelectedFilter(addDay === 'Без дня' ? 'Все' : addDay);
@@ -1036,6 +1138,14 @@ function MapView({
     setAddDay('Без дня');
     setSelectedSuggestionId(null);
     setDraftCoordinates(null);
+  };
+
+  const deleteSelectedMapPlace = () => {
+    if (!selectedPlaceId) {
+      return;
+    }
+    onDeletePlace(selectedPlaceId);
+    setSelectedPlaceId(null);
   };
 
   return (
@@ -1052,8 +1162,8 @@ function MapView({
 
       <View style={styles.mapModeGrid}>
         <View style={styles.mapModeCard}>
-          <Text style={styles.mapModeTitle}>Прототип</Text>
-          <Text style={styles.mapModeText}>Один локальный mock-поиск по Грузии, добавление точек и текстовых мест.</Text>
+          <Text style={styles.mapModeTitle}>Поиск</Text>
+          <Text style={styles.mapModeText}>Сейчас работает локальная база мест Грузии, добавление точек и текстовых мест.</Text>
         </View>
         <View style={styles.mapModeCard}>
           <Text style={styles.mapModeTitle}>Маршрут</Text>
@@ -1141,47 +1251,59 @@ function MapView({
                 const position = coordinateToPreviewPosition(pin.coordinates.latitude, pin.coordinates.longitude);
 
                 return (
-                <View
-                  key={pin.pointId}
-                  style={[
-                    styles.mapMarker,
-                    pin.color === 'gray' ? styles.unscheduledMarker : styles.scheduledMarker,
-                    { left: position.left, top: position.top },
-                  ]}
-                >
-                  <Text style={styles.mapMarkerText}>{pin.label ?? ''}</Text>
-                </View>
+                  <Pressable
+                    key={pin.pointId}
+                    style={[
+                      styles.mapMarker,
+                      pin.color === 'gray' ? styles.unscheduledMarker : styles.scheduledMarker,
+                      { left: position.left, top: position.top },
+                    ]}
+                    onPress={(event) => {
+                      event.stopPropagation();
+                      setSelectedPlaceId(pin.pointId);
+                    }}
+                  >
+                    <Text style={styles.mapMarkerText}>{pin.label ?? ''}</Text>
+                  </Pressable>
                 );
               })}
             </View>
           </Pressable>
         )}
-        <View style={styles.mapLegend}>
-          <Text style={styles.mapLegendTitle}>Легенда</Text>
-          <View style={styles.legendRow}>
-            <View style={[styles.legendDot, styles.legendNoDayDot]} />
-            <Text style={styles.mapLegendText}>Серые - без дня</Text>
+        {selectedMapPlace && selectedMapPlaceDetails ? (
+          <View style={styles.selectedPlacePanel}>
+            <Image
+              source={{ uri: selectedMapPlaceDetails.imageUrl }}
+              style={styles.selectedPlaceImage}
+            />
+            <View style={styles.selectedPlaceContent}>
+              <Text style={styles.selectedPlaceTitle}>{selectedMapPlace.title}</Text>
+              <Text style={styles.selectedPlaceDescription}>{selectedMapPlaceDetails.description}</Text>
+              <Text style={styles.selectedPlaceMeta}>
+                {selectedMapPlace.address ?? 'Адрес не указан'}
+              </Text>
+              <View style={styles.selectedPlaceActions}>
+                <TouchableOpacity style={styles.selectedPlaceCloseButton} onPress={() => setSelectedPlaceId(null)}>
+                  <Text style={styles.selectedPlaceCloseButtonText}>Закрыть</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.selectedPlaceDeleteButton} onPress={deleteSelectedMapPlace}>
+                  <Text style={styles.selectedPlaceDeleteButtonText}>Удалить</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
-          <View style={styles.legendRow}>
-            <View style={[styles.legendDot, styles.legendDayDot]} />
-            <Text style={styles.mapLegendText}>Красные - точки выбранного дня</Text>
-          </View>
-          <View style={styles.legendRow}>
-            <View style={styles.legendRouteLine} />
-            <Text style={styles.mapLegendText}>Синяя линия - route geometry</Text>
-          </View>
-        </View>
+        ) : null}
       </View>
 
       <View style={styles.addPointPanel}>
         <Text style={styles.addPointTitle}>Поиск и добавление места</Text>
         <Text style={styles.addPointHint}>
-          Это prototype: подсказки только из local/mock списка Грузии. Production online search подключим после provider proof.
+          Сейчас подсказки идут из локальной базы Грузии. Полный онлайн-поиск подключается через провайдера карт.
         </Text>
         <TextInput
           style={styles.textInput}
           onChangeText={updateAddQuery}
-          placeholder="Искать место в локальном mock по Грузии"
+          placeholder="Искать место в Грузии"
           placeholderTextColor="#8b9489"
           value={addQuery}
         />
@@ -1202,7 +1324,7 @@ function MapView({
         </View>
 
         <View style={styles.suggestionSection}>
-          <Text style={styles.suggestionLabel}>Локальные подсказки по Грузии</Text>
+          <Text style={styles.suggestionLabel}>Подсказки по Грузии</Text>
           {shownSuggestions.length > 0 ? (
             <View style={styles.suggestionList}>
               {shownSuggestions.map((suggestion) => {
@@ -1264,7 +1386,7 @@ function MapView({
       <View style={styles.mapNotice}>
         <Text style={styles.mapNoticeTitle}>Сейчас это прототип карты</Text>
         <Text style={styles.mapNoticeText}>
-          Подсказки берутся только из локальных фикстур Грузии. Route line строится из domain RouteGeometry/mock provider geometry, без прямой линии между точками.
+          Подсказки пока берутся из локальной базы Грузии. Для полного поиска, русской карты и реального дорожного маршрута нужен картографический провайдер.
         </Text>
       </View>
 
@@ -1409,6 +1531,7 @@ function buildLeafletMapHtml(pins: MapPin[], routeGeometry: RouteGeometrySnapsho
     lat: pin.coordinates.latitude,
     lng: pin.coordinates.longitude,
     markerColor: pin.color === 'gray' ? '#5f6770' : '#d92d20',
+    pointId: pin.pointId,
     title: pin.title,
   }));
   const routeCoordinates = routeGeometry?.coordinates.map((coordinate) => [
@@ -1469,9 +1592,15 @@ function buildLeafletMapHtml(pins: MapPin[], routeGeometry: RouteGeometrySnapsho
         iconSize: [30, 30],
         popupAnchor: [0, -16]
       });
-      L.marker(latlng, { icon })
+      const marker = L.marker(latlng, { icon })
         .bindPopup('<strong>' + point.title + '</strong>')
         .addTo(map);
+      marker.on('click', () => {
+        window.parent.postMessage({
+          type: 'trip-map-marker',
+          pointId: point.pointId
+        }, '*');
+      });
     });
 
     if (routeLatlngs.length > 1) {
@@ -1500,6 +1629,31 @@ function buildLeafletMapHtml(pins: MapPin[], routeGeometry: RouteGeometrySnapsho
 
 function normalizeSuggestionText(value: string) {
   return value.trim().toLocaleLowerCase('ru-RU');
+}
+
+function getPlaceDetails(place: Place): PlaceDetails {
+  const detailsKey = place.providerPlaceId ?? place.id;
+  const exactDetails = placeDetailsByKey[detailsKey];
+
+  if (exactDetails) {
+    return exactDetails;
+  }
+
+  const normalizedTitle = normalizeSuggestionText(place.title);
+  const matchingSuggestion = georgiaPlaceSuggestions.find((suggestion) => (
+    normalizeSuggestionText(suggestion.title) === normalizedTitle
+  ));
+
+  if (matchingSuggestion && placeDetailsByKey[matchingSuggestion.id]) {
+    return placeDetailsByKey[matchingSuggestion.id];
+  }
+
+  return {
+    description: place.address
+      ? `Сохраненное место в поездке. Адрес: ${place.address}.`
+      : 'Сохраненное место без описания. Описание появится после подключения контент-провайдера.',
+    imageUrl: `https://source.unsplash.com/640x360/?${encodeURIComponent(`${place.title} Georgia`)}`,
+  };
 }
 
 function coordinateToPreviewPosition(latitude: number, longitude: number) {
@@ -1990,49 +2144,73 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '900',
   },
-  mapLegend: {
+  selectedPlacePanel: {
+    alignItems: 'stretch',
     backgroundColor: '#ffffff',
     borderRadius: 8,
     bottom: 12,
+    flexDirection: 'row',
+    gap: 10,
     left: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
+    padding: 10,
     position: 'absolute',
     right: 12,
   },
-  legendRow: {
-    alignItems: 'center',
+  selectedPlaceImage: {
+    backgroundColor: '#dce7db',
+    borderRadius: 6,
+    height: 96,
+    width: 112,
+  },
+  selectedPlaceContent: {
+    flex: 1,
+    minWidth: 0,
+  },
+  selectedPlaceTitle: {
+    color: '#1d261f',
+    fontSize: 15,
+    fontWeight: '900',
+  },
+  selectedPlaceDescription: {
+    color: '#485246',
+    fontSize: 13,
+    lineHeight: 18,
+    marginTop: 4,
+  },
+  selectedPlaceMeta: {
+    color: '#7a8577',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  selectedPlaceActions: {
     flexDirection: 'row',
     gap: 8,
-    marginTop: 5,
+    marginTop: 9,
   },
-  legendDot: {
-    borderColor: '#ffffff',
-    borderRadius: 999,
-    borderWidth: 2,
-    height: 14,
-    width: 14,
+  selectedPlaceCloseButton: {
+    alignItems: 'center',
+    borderColor: '#cbd8c8',
+    borderRadius: 8,
+    borderWidth: 1,
+    flex: 1,
+    paddingVertical: 8,
   },
-  legendNoDayDot: {
-    backgroundColor: '#5f6770',
-  },
-  legendDayDot: {
-    backgroundColor: '#d92d20',
-  },
-  legendRouteLine: {
-    backgroundColor: '#2563eb',
-    borderRadius: 999,
-    height: 5,
-    width: 22,
-  },
-  mapLegendTitle: {
-    color: '#1d261f',
+  selectedPlaceCloseButtonText: {
+    color: '#3e4a3c',
     fontSize: 13,
     fontWeight: '800',
   },
-  mapLegendText: {
-    color: '#657063',
+  selectedPlaceDeleteButton: {
+    alignItems: 'center',
+    backgroundColor: '#d92d20',
+    borderRadius: 8,
+    flex: 1,
+    paddingVertical: 8,
+  },
+  selectedPlaceDeleteButtonText: {
+    color: '#ffffff',
     fontSize: 13,
+    fontWeight: '900',
   },
   mapNotice: {
     backgroundColor: '#fff8df',
