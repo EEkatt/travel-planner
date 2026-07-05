@@ -1249,7 +1249,13 @@ function TripDayCard({
     },
     onPanResponderRelease: (_, gestureState) => {
       if (Math.abs(gestureState.dx) > Math.abs(gestureState.dy)) {
-        setIsActionsOpen(Math.abs(gestureState.dx) >= swipeActionThreshold);
+        const isIntentionalSwipe = Math.abs(gestureState.dx) >= swipeActionThreshold;
+
+        if (isIntentionalSwipe) {
+          setIsActionsOpen((value) => !value);
+        } else {
+          setIsActionsOpen(false);
+        }
       } else {
         const targetIndex = clamp(index + Math.round(gestureState.dy / tripDayDragStep), 0, itemCount - 1);
         onMoveDay(day.id, targetIndex);
@@ -1791,9 +1797,13 @@ function MapPlaceCard({
     },
     onPanResponderRelease: (_, gestureState) => {
       if (Math.abs(gestureState.dx) > Math.abs(gestureState.dy)) {
-        const shouldOpenActions = Math.abs(gestureState.dx) >= swipeActionThreshold;
-        setIsActionsOpen(shouldOpenActions);
-        if (!shouldOpenActions) {
+        const isIntentionalSwipe = Math.abs(gestureState.dx) >= swipeActionThreshold;
+
+        if (isIntentionalSwipe) {
+          setIsActionsOpen((value) => !value);
+          setIsDayPickerOpen(false);
+        } else {
+          setIsActionsOpen(false);
           setIsDayPickerOpen(false);
         }
       } else if (dayId) {
