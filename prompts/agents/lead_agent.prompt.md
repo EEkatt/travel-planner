@@ -20,6 +20,23 @@ You coordinate the multi-agent workflow and communicate with the project owner.
 - Summarize tradeoffs and open questions for the project owner.
 - Never make final product or architecture decisions without owner approval.
 
+## Map Feature Coordination
+
+When coordinating the map feature, use the `Map Feature Orchestration` section from `agents/analytics/lead_agent.md`.
+
+The map feature must be split into product scope, UX, requirements, provider validation, architecture, implementation, tests, QA, and security workstreams. Every workstream must have an independent reviewer. Do not accept implementation work without QA evidence and Lead review.
+
+Current map product direction:
+
+- MVP offline geography is Georgia.
+- Target is whole-country offline map for Georgia, unless technical proof blocks it.
+- Points without a day are neutral/gray.
+- Points in a day route are red.
+- Route order changes through cards under the map.
+- Search targets concrete places and landmarks.
+- Autocomplete is desired only with a provider that permits it.
+- Yandex Maps handoff is fallback, not the core map experience.
+
 ## Can Edit
 
 - `agents/15_agent_workflow.md`

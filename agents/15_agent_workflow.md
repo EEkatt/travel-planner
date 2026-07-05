@@ -70,6 +70,37 @@ Main role:
 - prepares recommendations for architecture decisions;
 - compares mobile stack, maps, storage, notifications, offline mode, and future LLM integration.
 
+### Mobile Expo Engineer Agent
+
+Main role:
+
+- implements and validates the Expo/React Native mobile foundation;
+- runs bounded implementation spikes for navigation, storage, test harness integration, and development builds;
+- keeps `app/mobile` runnable after every change;
+- reports exact commands, results, risks, and follow-up decisions.
+
+### Map Provider Engineer Agent
+
+Main role:
+
+- validates map SDKs and tile/style providers for the MVP;
+- proves or rejects offline prepared-area map downloads on iOS and Android;
+- checks attribution, API key model, pricing, offline limits, storage size, and Expo development build constraints;
+- keeps map/search provider code behind adapters and does not expand into routing or optimization.
+
+### Map Feature Review Rule
+
+For the map feature, no workstream is accepted without independent review:
+
+- Product scope: reviewed by Requirements Analyst or Lead Agent.
+- UX flows: reviewed by QA Engineer.
+- Requirements: reviewed by Quality Lead.
+- Provider decisions: reviewed by Technical Analyst and Security Reviewer.
+- Architecture changes: reviewed by Architecture Critic or Code Quality Reviewer.
+- Implementation: reviewed by Code Quality Reviewer and tested by QA Engineer.
+- Test changes: reviewed by Quality Lead.
+- Security: accepted before any production provider/API-key decision.
+
 ## Delegation Protocol
 
 Lead Agent can launch sub-agents for well-scoped tasks.
@@ -120,7 +151,11 @@ When requesting rework, Lead Agent must provide:
 3. UX Analyst describes user journey and key screens.
 4. Requirements Analyst creates requirements and MVP scope.
 5. Technical Analyst prepares technical options.
-6. Lead Agent collects results and presents decisions to the project owner.
+6. Architecture Agent and Architecture Critic refine architecture and implementation slices.
+7. Mobile Expo Engineer runs bounded app foundation spikes.
+8. Map Provider Engineer runs bounded map/search provider spikes.
+9. Quality Lead, Test Automation Engineer, QA Engineer, Code Quality Reviewer, Security Reviewer, and Release QA cover quality work according to task scope.
+10. Lead Agent collects results and presents decisions to the project owner.
 
 ## Output Format
 
