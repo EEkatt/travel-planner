@@ -279,6 +279,254 @@ const georgiaPlaceSuggestions: PlaceSuggestion[] = [
     longitude: 44.8102,
     title: 'Летопись Грузии',
   },
+  {
+    address: 'Тбилиси, Грузия',
+    countryCode: 'GE',
+    id: 'ge-mtatsminda',
+    latitude: 41.6941,
+    longitude: 44.7856,
+    title: 'Парк Мтацминда',
+  },
+  {
+    address: 'Тбилиси, Грузия',
+    countryCode: 'GE',
+    id: 'ge-dry-bridge',
+    latitude: 41.7023,
+    longitude: 44.8025,
+    title: 'Сухой мост',
+  },
+  {
+    address: 'Тбилиси, Грузия',
+    countryCode: 'GE',
+    id: 'ge-sameba',
+    latitude: 41.6977,
+    longitude: 44.8167,
+    title: 'Собор Самеба',
+  },
+  {
+    address: 'Тбилиси, Грузия',
+    countryCode: 'GE',
+    id: 'ge-lisi-lake',
+    latitude: 41.7424,
+    longitude: 44.7389,
+    title: 'Озеро Лиси',
+  },
+  {
+    address: 'Тбилиси, Грузия',
+    countryCode: 'GE',
+    id: 'ge-turtle-lake',
+    latitude: 41.7016,
+    longitude: 44.7548,
+    title: 'Черепашье озеро',
+  },
+  {
+    address: 'Тбилиси, Грузия',
+    countryCode: 'GE',
+    id: 'ge-dezerter-bazaar',
+    latitude: 41.7213,
+    longitude: 44.7954,
+    title: 'Дезертирский рынок',
+  },
+  {
+    address: 'Тбилиси, Грузия',
+    countryCode: 'GE',
+    id: 'ge-fabrika',
+    latitude: 41.7094,
+    longitude: 44.8031,
+    title: 'Fabrika Tbilisi',
+  },
+  {
+    address: 'Батуми, Грузия',
+    countryCode: 'GE',
+    id: 'ge-batumi-botanical',
+    latitude: 41.6941,
+    longitude: 41.7075,
+    title: 'Батумский ботанический сад',
+  },
+  {
+    address: 'Батуми, Грузия',
+    countryCode: 'GE',
+    id: 'ge-piazza-batumi',
+    latitude: 41.6497,
+    longitude: 41.6405,
+    title: 'Площадь Пьяцца',
+  },
+  {
+    address: 'Батуми, Грузия',
+    countryCode: 'GE',
+    id: 'ge-europe-square-batumi',
+    latitude: 41.6501,
+    longitude: 41.6357,
+    title: 'Площадь Европы',
+  },
+  {
+    address: 'Аджария, Грузия',
+    countryCode: 'GE',
+    id: 'ge-gonio',
+    latitude: 41.572,
+    longitude: 41.5728,
+    title: 'Крепость Гонио',
+  },
+  {
+    address: 'Имеретия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-okatse',
+    latitude: 42.455,
+    longitude: 42.5273,
+    title: 'Каньон Окаце',
+  },
+  {
+    address: 'Имеретия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-martvili',
+    latitude: 42.4577,
+    longitude: 42.3774,
+    title: 'Каньон Мартвили',
+  },
+  {
+    address: 'Рача, Грузия',
+    countryCode: 'GE',
+    id: 'ge-ambrolauri',
+    latitude: 42.5211,
+    longitude: 43.1622,
+    title: 'Амбролаури',
+  },
+  {
+    address: 'Рача, Грузия',
+    countryCode: 'GE',
+    id: 'ge-shaori',
+    latitude: 42.4611,
+    longitude: 43.0803,
+    title: 'Озеро Шаори',
+  },
+  {
+    address: 'Кахетия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-telavi',
+    latitude: 41.9198,
+    longitude: 45.4732,
+    title: 'Телави',
+  },
+  {
+    address: 'Кахетия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-alaverdi',
+    latitude: 42.0327,
+    longitude: 45.3772,
+    title: 'Монастырь Алаверди',
+  },
+  {
+    address: 'Кахетия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-gremi',
+    latitude: 42.0019,
+    longitude: 45.6607,
+    title: 'Греми',
+  },
+  {
+    address: 'Кахетия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-david-gareja',
+    latitude: 41.4474,
+    longitude: 45.3767,
+    title: 'Давид Гареджи',
+  },
+  {
+    address: 'Казбеги, Грузия',
+    countryCode: 'GE',
+    id: 'ge-dariali',
+    latitude: 42.7358,
+    longitude: 44.6322,
+    title: 'Дарьяльское ущелье',
+  },
+  {
+    address: 'Гудаури, Грузия',
+    countryCode: 'GE',
+    id: 'ge-gudauri',
+    latitude: 42.4775,
+    longitude: 44.4762,
+    title: 'Гудаури',
+  },
+  {
+    address: 'Военно-Грузинская дорога, Грузия',
+    countryCode: 'GE',
+    id: 'ge-russia-georgia-friendship',
+    latitude: 42.4932,
+    longitude: 44.4531,
+    title: 'Арка дружбы народов',
+  },
+  {
+    address: 'Самегрело, Грузия',
+    countryCode: 'GE',
+    id: 'ge-zugdidi',
+    latitude: 42.5088,
+    longitude: 41.8709,
+    title: 'Зугдиди',
+  },
+  {
+    address: 'Зугдиди, Грузия',
+    countryCode: 'GE',
+    id: 'ge-dadiani',
+    latitude: 42.5086,
+    longitude: 41.8694,
+    title: 'Дворец Дадиани',
+  },
+  {
+    address: 'Самегрело, Грузия',
+    countryCode: 'GE',
+    id: 'ge-anaklia',
+    latitude: 42.3934,
+    longitude: 41.5695,
+    title: 'Анаклия',
+  },
+  {
+    address: 'Самцхе-Джавахети, Грузия',
+    countryCode: 'GE',
+    id: 'ge-akhaltsikhe',
+    latitude: 41.639,
+    longitude: 42.9826,
+    title: 'Ахалцихе',
+  },
+  {
+    address: 'Ахалцихе, Грузия',
+    countryCode: 'GE',
+    id: 'ge-rabati',
+    latitude: 41.6426,
+    longitude: 42.9767,
+    title: 'Крепость Рабат',
+  },
+  {
+    address: 'Самцхе-Джавахети, Грузия',
+    countryCode: 'GE',
+    id: 'ge-borjomi-park',
+    latitude: 41.8376,
+    longitude: 43.3884,
+    title: 'Центральный парк Боржоми',
+  },
+  {
+    address: 'Самцхе-Джавахети, Грузия',
+    countryCode: 'GE',
+    id: 'ge-bakuriani',
+    latitude: 41.7509,
+    longitude: 43.5293,
+    title: 'Бакуриани',
+  },
+  {
+    address: 'Сванетия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-hatsvali',
+    latitude: 43.0406,
+    longitude: 42.7542,
+    title: 'Хацвали',
+  },
+  {
+    address: 'Сванетия, Грузия',
+    countryCode: 'GE',
+    id: 'ge-koruldi',
+    latitude: 43.0733,
+    longitude: 42.7342,
+    title: 'Озера Корульди',
+  },
 ];
 
 export default function App() {
@@ -483,7 +731,6 @@ export default function App() {
             dayItems={dayItems}
             days={days}
             onAddPlace={addPlace}
-            onAddDay={addDay}
             onAssignPlaceToDay={assignPlaceToDay}
             onMoveDayCard={reorderDayCard}
             onRefreshRoute={refreshMockRoute}
@@ -626,7 +873,6 @@ function MapView({
   dayItems,
   days,
   onAddPlace,
-  onAddDay,
   onAssignPlaceToDay,
   onMoveDayCard,
   onRefreshRoute,
@@ -636,7 +882,6 @@ function MapView({
   dayItems: DayItem[];
   days: TripDay[];
   onAddPlace: (place: AddPlaceInput) => void;
-  onAddDay: () => void;
   onAssignPlaceToDay: (placeId: string, dayId: DayId) => void;
   onMoveDayCard: (dayId: DayId, pointId: string, direction: -1 | 1) => void;
   onRefreshRoute: (dayId: DayId) => void;
@@ -687,7 +932,7 @@ function MapView({
   const normalizedQuery = normalizeSuggestionText(addQuery);
   const shownSuggestions = useMemo(() => {
     if (!normalizedQuery) {
-      return georgiaPlaceSuggestions.slice(0, 3);
+      return georgiaPlaceSuggestions.slice(0, 6);
     }
 
     return georgiaPlaceSuggestions
@@ -696,7 +941,7 @@ function MapView({
 
         return searchableText.includes(normalizedQuery);
       })
-      .slice(0, 5);
+      .slice(0, 10);
   }, [normalizedQuery]);
   const selectedSuggestion = selectedSuggestionId
     ? georgiaPlaceSuggestions.find((suggestion) => suggestion.id === selectedSuggestionId) ?? null
@@ -805,7 +1050,12 @@ function MapView({
       </View>
 
       <View style={styles.mapToolbar}>
-        <View style={styles.filterTabs}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.filterCarousel}
+          contentContainerStyle={styles.filterCarouselContent}
+        >
           {mapFilters.map((filter) => {
             const isActive = selectedFilter === filter;
 
@@ -819,10 +1069,7 @@ function MapView({
               </TouchableOpacity>
             );
           })}
-          <TouchableOpacity style={styles.addDayFilterButton} onPress={onAddDay}>
-            <Text style={styles.addDayFilterText}>+ День</Text>
-          </TouchableOpacity>
-        </View>
+        </ScrollView>
 
         <View style={styles.zoomControls}>
           <TouchableOpacity style={styles.zoomButton} onPress={() => setZoom((value) => Math.max(80, value - 20))}>
@@ -1576,7 +1823,10 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 12,
   },
-  filterTabs: {
+  filterCarousel: {
+    marginHorizontal: -2,
+  },
+  filterCarouselContent: {
     backgroundColor: '#e7ece5',
     borderRadius: 8,
     flexDirection: 'row',
@@ -1586,21 +1836,9 @@ const styles = StyleSheet.create({
   filterTab: {
     alignItems: 'center',
     borderRadius: 6,
-    flex: 1,
+    minWidth: 92,
+    paddingHorizontal: 14,
     paddingVertical: 9,
-  },
-  addDayFilterButton: {
-    alignItems: 'center',
-    backgroundColor: '#243126',
-    borderRadius: 6,
-    minWidth: 74,
-    paddingHorizontal: 10,
-    paddingVertical: 9,
-  },
-  addDayFilterText: {
-    color: '#ffffff',
-    fontSize: 13,
-    fontWeight: '900',
   },
   activeFilterTab: {
     backgroundColor: '#ffffff',
