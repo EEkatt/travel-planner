@@ -18,6 +18,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
+    "test": "tsc --ignoreConfig --ignoreDeprecations 6.0 --module commonjs --target es2020 --moduleResolution node --outDir node_modules/.cache/mobile-map-tests --rootDir src src/domain/map/__tests__/mapDomain.test.ts && node node_modules/.cache/mobile-map-tests/domain/map/__tests__/mapDomain.test.js",
+    "test:map": "tsc --ignoreConfig --ignoreDeprecations 6.0 --module commonjs --target es2020 --moduleResolution node --outDir node_modules/.cache/mobile-map-tests --rootDir src src/domain/map/__tests__/mapDomain.test.ts && node node_modules/.cache/mobile-map-tests/domain/map/__tests__/mapDomain.test.js",
     "typecheck": "tsc --noEmit",
     "web": "expo start --web"
   },
